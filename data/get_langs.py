@@ -1,4 +1,3 @@
-
 import langdetect
 import pandas as pd
 from pytube import YouTube
@@ -18,4 +17,4 @@ for row in data.iterrows():
         #print("Not available")
     langs.append(lang)
 data.insert(len(data.columns), 'Language', langs)
-data.to_csv("avspeed_test_langs.csv")
+data.to_csv("avspeech_test_langs.csv")
