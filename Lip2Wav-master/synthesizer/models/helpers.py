@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.seq2seq import Helper
 
-
 class TacoTestHelper(Helper):
 	def __init__(self, batch_size, hparams):
 		with tf.name_scope("TacoTestHelper"):

@@ -1,8 +1,12 @@
 # from tensorflow.contrib.training import HParams
-from dummy_hp import DummyHP
+# from dummy_hp import DummyHP
 from glob import glob
 import os, pickle
 
+class DummyHP():
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+        
 def get_image_list(split, data_root):
     filelist = []   
     with open(os.path.join(data_root, '{}.txt'.format(split))) as vidlist:

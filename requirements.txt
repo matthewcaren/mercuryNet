@@ -1,8 +1,8 @@
 Cython
 Cmake
 
-tensorflow-macos
-tensorflow-metal
+# tensorflow-macos
+# tensorflow-metal
 
 # numpy
 audioread==2.1.8
