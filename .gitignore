@@ -3,6 +3,7 @@
 vids/
 Lip2Wav-pytorch/models/ckpt_223000
 Lip2Wav-master/face_detection/detection/sfd/s3fd.pth
+Lip2Wav-master/synthesizer/models/tacotron_model.ckpt-159000
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
