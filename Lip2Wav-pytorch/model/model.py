@@ -7,6 +7,7 @@ from torch.nn import functional as F
 from model.layers import ConvNorm, LinearNorm, ConvNorm3D
 from utils.util import to_var, get_mask_from_lengths
 
+device = torch.device('cpu')
 class Tacotron2Loss(nn.Module):
 	def __init__(self):
 		super(Tacotron2Loss, self).__init__()
@@ -298,7 +299,7 @@ class Encoder3D(nn.Module):
 		# 		x = F.dropout(self.convolutions[i](x), 0.5, self.training)
 
 		x = x.permute(0, 2, 1, 3, 4).squeeze(4).squeeze(3).contiguous()  # [bs x 90 x encoder_embedding_dim]
-		print(x.size())
+		# print(x.size())
 		# pytorch tensor are not reversible, hence the conversion
 		input_lengths = input_lengths.cpu().numpy()
 		# x = nn.utils.rnn.pack_padded_sequence(
@@ -306,7 +307,7 @@ class Encoder3D(nn.Module):
 
 		# self.lstm.flatten_parameters()
 		outputs, _ = self.lstm(x)
-		print('outputs',outputs.size())
+		print('output size',outputs.size())
 		# outputs, _ = nn.utils.rnn.pad_packed_sequence(
 		# 	outputs, batch_first=True)
 		# print('outputs', outputs.size())
@@ -376,8 +377,8 @@ class Decoder(nn.Module):
 		B = memory.size(0)
 		decoder_input = Variable(memory.data.new(
 			B, self.num_mels * self.n_frames_per_step).zero_())
-		print(decoder_input)
-		print(decoder_input.size())
+		# print(decoder_input)
+		print('Decoder size', decoder_input.size())
 		return decoder_input
 
 	def initialize_decoder_states(self, memory, mask):
@@ -594,9 +595,9 @@ class Tacotron2(nn.Module):
 		val = sqrt(3.0)*std  # uniform bounds for std
 		self.embedding.weight.data.uniform_(-val, val)
 		# self.encoder = Encoder()
-		self.encoder = Encoder3D(hps).cuda()
-		self.decoder = Decoder().cuda()
-		self.postnet = Postnet().cuda()
+		self.encoder = Encoder3D(hps).to(device)
+		self.decoder = Decoder().to(device)
+		self.postnet = Postnet().to(device)
 
 	def parse_batch(self, batch):
 		text_padded, input_lengths, mel_padded, gate_padded, output_lengths = batch
@@ -649,7 +650,7 @@ class Tacotron2(nn.Module):
 		embedded_inputs = vid_inputs.type(torch.FloatTensor)
 		# print('vid_inputs',vid_inputs)
 
-		encoder_outputs = self.encoder(embedded_inputs.cuda(), vid_lengths.cuda())
+		encoder_outputs = self.encoder(embedded_inputs.to(device), vid_lengths.to(device))
 		mel_outputs, gate_outputs, alignments = self.decoder(
 			encoder_outputs, mels, memory_lengths=vid_lengths)
 
@@ -673,7 +674,7 @@ class Tacotron2(nn.Module):
 
 		embedded_inputs = vid_inputs.type(torch.FloatTensor)
 
-		encoder_outputs = self.encoder.inference(embedded_inputs.cuda())
+		encoder_outputs = self.encoder.inference(embedded_inputs.to(device))
 
 		mel_outputs, gate_outputs, alignments = self.decoder.inference(
 			encoder_outputs)

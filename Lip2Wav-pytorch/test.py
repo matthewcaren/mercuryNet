@@ -17,7 +17,8 @@ from utils.util import mode, to_var, to_arr
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 torch.manual_seed(0)
-torch.cuda.manual_seed_all(0)
+# torch.cuda.manual_seed_all(0)
+
 
 class Generator(object):
 	def __init__(self, model):
@@ -82,8 +83,8 @@ def get_image_list(split, data_root):
 	with open(os.path.join(data_root, '{}.txt'.format(split))) as vidlist:
 		for vid_id in vidlist:
 			vid_id = vid_id.strip()
-			filelist.extend(list(glob(os.path.join(data_root, 'preprocessed', vid_id, '*/*.jpg'))))
-			filelist.extend(list(glob(os.path.join(data_root, 'preprocessed_new', vid_id, '*/*.jpg'))))
+			filelist.extend(list(glob(os.path.join(data_root, vid_id, '*.jpg'))))
+			#filelist.extend(list(glob(os.path.join(data_root, 'preprocessed_new', vid_id, '*/*.jpg'))))
 	return filelist
 
 
@@ -133,11 +134,13 @@ def contiguous_window_generator(vidpath):
 
 
 def load_model(ckpt_pth):
-	ckpt_dict = torch.load(ckpt_pth)
+	device = torch.device('cpu')
+
+	ckpt_dict = torch.load(ckpt_pth, map_location=device)
 	model = Tacotron2()
 	model.load_state_dict(ckpt_dict['model'])
-	for name, param in model.named_parameters():
-		print(name)
+	# for name, param in model.named_parameters():
+	# 	print("Name", name)
 	model = mode(model, True).eval()
 	return model
 
@@ -149,8 +152,8 @@ def infer_vid(inputs, model, mode='train'):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-d', "--data_dir", help="Speaker folder path", required=True)
-	parser.add_argument('-r', "--results_dir", help="Speaker folder path", required=True)
+	parser.add_argument('-d', "--data_root", help="Speaker folder path", required=True)
+	parser.add_argument('-r', "--results_root", help="Speaker folder path", required=True)
 	parser.add_argument('--checkpoint', help="Path to trained checkpoint", required=True)
 	parser.add_argument("--preset", help="Speaker-specific hyper-params", type=str, required=False)
 	args = parser.parse_args()
@@ -160,7 +163,6 @@ if __name__ == '__main__':
 	# 	sif.hparams.parse_json(f.read())
 
 	# sif.hparams.set_hparam('eval_ckpt', args.checkpoint)
-	print(args)
 	videos = get_testlist(args.data_root)
 
 	if not os.path.isdir(args.results_root):
@@ -169,6 +171,7 @@ if __name__ == '__main__':
 	GTS_ROOT = os.path.join(args.results_root, 'gts/')
 	WAVS_ROOT = os.path.join(args.results_root, 'wavs/')
 	files_to_delete = []
+
 	if not os.path.isdir(GTS_ROOT):
 		os.mkdir(GTS_ROOT)
 	else:
@@ -193,6 +196,7 @@ if __name__ == '__main__':
 
 			vidname = vid.split('/')[-2] + '_' + vid.split('/')[-1]
 			outfile = '{}{}_{}:{}.wav'.format(WAVS_ROOT, vidname, ss, es)
+			print(outfile)
 			try:
 				model.vc(sample, outfile)
 			except KeyboardInterrupt:

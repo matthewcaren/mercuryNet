@@ -1,5 +1,8 @@
 # Custom
 .DS_Store
+vids/
+Lip2Wav-pytorch/models/ckpt_223000
+Lip2Wav-master/face_detection/detection/sfd/s3fd.pth
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

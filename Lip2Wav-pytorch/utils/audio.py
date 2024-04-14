@@ -68,7 +68,7 @@ def _griffin_lim(S):
 	Based on https://github.com/librosa/librosa/issues/434
 	'''
 	angles = np.exp(2j * np.pi * np.random.rand(*S.shape))
-	S_complex = np.abs(S).astype(np.complex)
+	S_complex = np.abs(S).astype(complex)
 	y = _istft(S_complex * angles)
 	for i in range(hps.gl_iters):
 		angles = np.exp(1j * np.angle(_stft(y)))
@@ -116,7 +116,7 @@ def _mel_to_linear(spectrogram):
 
 def _build_mel_basis():
 	n_fft = (hps.num_freq - 1) * 2
-	return librosa.filters.mel(hps.sample_rate, n_fft, n_mels=hps.num_mels)
+	return librosa.filters.mel(sr=hps.sample_rate, n_fft=n_fft, n_mels=hps.num_mels)
 
 def _amp_to_db(x):
 	return 20 * np.log10(np.maximum(1e-5, x))

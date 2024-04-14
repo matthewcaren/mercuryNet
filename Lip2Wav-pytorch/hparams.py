@@ -34,7 +34,7 @@ class hparams:
 	n_frames_per_step = 2
 	decoder_rnn_dim = 1024
 	prenet_dim = 256
-	max_decoder_steps = 120
+	max_decoder_steps = 240
 	gate_threshold = 0.5
 	p_attention_dropout = 0.1
 	p_decoder_dropout = 0.1
@@ -55,7 +55,7 @@ class hparams:
 	################################
 	# Train                        #
 	################################
-	is_cuda = True
+	is_cuda = False
 	pin_mem = True
 	n_workers = 8
 	lr = 2e-3
