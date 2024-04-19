@@ -140,8 +140,8 @@ def load_model(ckpt_pth):
 
 
 def infer_vid(inputs, model, mode="train"):
-    mel_outputs, mel_outputs_postnet, _, alignments = model.inference(inputs, mode)
-    return (mel_outputs, mel_outputs_postnet, alignments)
+    output = model.inference(inputs, mode)
+    return output
 
 
 if __name__ == "__main__":
