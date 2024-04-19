@@ -78,20 +78,16 @@ class Generator(object):
 		audio.save_wav(wav, outfile, sr=hps.sample_rate)
 
 
-def get_image_list(split, data_root):
-	filelist = []
-	with open(os.path.join(data_root, '{}.txt'.format(split))) as vidlist:
-		for vid_id in vidlist:
-			vid_id = vid_id.strip()
-			filelist.extend(list(glob(os.path.join(data_root, vid_id, '*.jpg'))))
-			#filelist.extend(list(glob(os.path.join(data_root, 'preprocessed_new', vid_id, '*/*.jpg'))))
-	return filelist
-
-
 def get_testlist(data_root):
-	test_images = get_image_list('test', data_root)
-	# print(data_root)
-	# print(test_images)
+	# get top-level video directories
+	vid_dir_list = [f for f in os.listdir(data_root) if os.path.isdir(os.path.join(data_root, f))]
+
+	# build list of all image jpegs
+	test_images = []
+	for vid_dir in vid_dir_list:
+		d = os.path.join(data_root, vid_dir)
+		test_images += [f for f in os.listdir(d) if os.path.isfile(os.path.join(d, f)) and f.split('.')[-1]=='jpeg']
+
 	print('{} hours is available for testing'.format(len(test_images) / (hps.fps * 3600.)))
 	test_vids = {}
 	for x in test_images:
