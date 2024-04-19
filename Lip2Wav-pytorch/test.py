@@ -79,7 +79,10 @@ class Generator(object):
 
 
 def get_testlist(data_root):
+	# get top-level video directories
 	vid_dir_list = [f for f in os.listdir(data_root) if os.path.isdir(os.path.join(data_root, f))]
+
+	# build list of all image jpegs
 	test_images = []
 	for vid_dir in vid_dir_list:
 		d = os.path.join(data_root, vid_dir)
