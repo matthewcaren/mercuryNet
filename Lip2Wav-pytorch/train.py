@@ -7,9 +7,9 @@ from test import infer_vid
 from utils.util import mode
 from hparams import hparams as hps
 from torch.utils.data import DataLoader
-from utils.logger import Tacotron2Logger
+from utils.logger import MercuryNetLogger
 from utils.dataset import VideoMelLoader, VMcollate
-from model.model import Tacotron2, Tacotron2Loss
+from model.model import MercuryNet, MercuryNetLoss
 from datetime import datetime
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -72,7 +72,7 @@ def save_checkpoint(model, optimizer, iteration, ckpt_pth):
 
 def train(args):
     # build model
-    model = Tacotron2()
+    model = MercuryNet()
 
     mode(model, True)
     model = model.cuda()
@@ -83,7 +83,7 @@ def train(args):
         eps=hps.eps,
         weight_decay=hps.weight_decay,
     )
-    criterion = Tacotron2Loss()
+    criterion = MercuryNetLoss()
 
     # load checkpoint
     iteration = 1
@@ -113,7 +113,7 @@ def train(args):
         if not os.path.isdir(args.log_dir + current_time):
             os.makedirs(args.log_dir + current_time)
             os.chmod(args.log_dir + current_time, 0o775)
-        logger = Tacotron2Logger(args.log_dir + current_time)
+        logger = MercuryNetLogger(args.log_dir + current_time)
 
     # get ckpt_dir ready
     if args.ckpt_dir != "" and not os.path.isdir(args.ckpt_dir + current_time):

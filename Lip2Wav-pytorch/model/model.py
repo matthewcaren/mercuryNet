@@ -10,9 +10,9 @@ from utils.util import to_var, get_mask_from_lengths
 device = torch.device("cpu")
 
 
-class Tacotron2Loss(nn.Module):
+class MercuryNetLoss(nn.Module):
     def __init__(self):
-        super(Tacotron2Loss, self).__init__()
+        super(MercuryNetLoss, self).__init__()
 
     def forward(self, model_output, targets, iteration):
         mel_target, gate_target = targets[0], targets[1]
@@ -722,9 +722,9 @@ def is_end_of_frames(output, eps=0.2):
     return (output.data <= eps).all()
 
 
-class Tacotron2(nn.Module):
+class MercuryNet(nn.Module):
     def __init__(self):
-        super(Tacotron2, self).__init__()
+        super(MercuryNet, self).__init__()
         self.num_mels = hps.num_mels
         self.mask_padding = hps.mask_padding
         self.n_frames_per_step = hps.n_frames_per_step
@@ -806,7 +806,6 @@ class Tacotron2(nn.Module):
             encoder_outputs, mels, memory_lengths=vid_lengths
         )
 
-        mel_output
         s_postnet = self.postnet(mel_outputs)
         mel_outputs_postnet = mel_outputs + mel_outputs_postnet
 

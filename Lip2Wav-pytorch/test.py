@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 import sys, cv2, os, pickle, argparse, subprocess
 
-from model.model import Tacotron2
+from model.model import MercuryNet
 from hparams import hparams as hps
 import utils.audio_v as audio
 from utils.util import mode, to_var, to_arr
@@ -131,7 +131,7 @@ def load_model(ckpt_pth):
     device = torch.device("cpu")
 
     ckpt_dict = torch.load(ckpt_pth, map_location=device)
-    model = Tacotron2()
+    model = MercuryNet()
     model.load_state_dict(ckpt_dict["model"])
     # for name, param in model.named_parameters():
     # 	print("Name", name)
