@@ -36,11 +36,13 @@ def extract_features(wav_path):
                               center=True).squeeze()
     return np.stack((f0, voiced_flag, rms))
 
-def process_rows(dataFrame, verbose=False):
+def process_rows(dataFrame):
     model = YOLO('yolov8m-face.pt')
     batch_size = 32
     output_dir = './vids'
+    print(f'Processing rows {dataFrame[0][0]} to {dataFrame[-1][0]} of test dataset')
     for row in dataFrame:
+        if row[0] % 100 == 0: print("Starting row", row[0])
         # Download video and make directories
         vid_id = f"{row[1]}_{str(row[2])}"
         vid_dir = os.path.join(output_dir, vid_id)
@@ -99,12 +101,12 @@ def process_rows(dataFrame, verbose=False):
                     cv2.imwrite(f'{vid_dir}/{vid_id}_{counter}.jpg', result.orig_img[y1:y2,x1:x2, :])
                     counter += 1
             if failed_detection:
-                if verbose: print("Could not confidently detect faces in all frames for", vid_dir)
+                print("Could not confidently detect faces in all frames for", vid_dir)
                 shutil.rmtree(vid_dir)
                 
 if __name__ == '__main__':
     start = time.time()
     raw_data = pd.read_csv('./data/avspeech_test_langs.csv')
-    dataFrame = np.array(raw_data)[800:810]
+    dataFrame = np.array(raw_data)[895:905]
     process_rows(dataFrame)
     print(time.time() - start)
