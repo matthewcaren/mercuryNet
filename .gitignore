@@ -1,11 +1,12 @@
 # Custom
 .DS_Store
 vids/
-Lip2Wav-pytorch/models/ckpt_223000
+Lip2Wav-pytorch/checkpoints/ckpt_223000
 Lip2Wav-master/face_detection/detection/sfd/s3fd.pth
 Lip2Wav-master/synthesizer/tacotron_model.ckpt-159000
 yolov8m-face.pt
 face_detection/detection/sfd/s3fd.pth
+ageGender/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
