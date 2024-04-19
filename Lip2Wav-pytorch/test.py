@@ -64,6 +64,7 @@ class Generator(object):
 		all_windows.append(images[i: len(images)])
 
 		for window_idx, window_fnames in enumerate(all_windows):
+			print("Window", window_idx)
 			images = self.read_window(window_fnames)
 			# s = self.synthesizer.synthesize_spectrograms(images)[0] ######
 			mel_outputs, mel_outputs_postnet, alignments = infer_vid(images, self.synthesizer, mode='test')
@@ -74,7 +75,6 @@ class Generator(object):
 			else:
 				mel = np.concatenate((mel, s[:, hps.mel_overlap:]), axis=1)
 		wav = audio.inv_mel_spectrogram(mel, hps)
-
 		audio.save_wav(wav, outfile, sr=hps.sample_rate)
 
 
@@ -187,16 +187,14 @@ if __name__ == '__main__':
 	model = Generator(tacotron)
 
 	template = 'ffmpeg -y -loglevel panic -ss {} -i {} -to {} -strict -2 {}'
-	for vid in tqdm(videos):
+	for vid in videos:
+		print("Starting video", vid)
 		vidpath = vid + '/'
-		for (ss, es), images in tqdm(contiguous_window_generator(vidpath)):
-
+		for (ss, es), images in contiguous_window_generator(vidpath):
 			sample = {}
 			sample['images'] = images
-
 			vidname = vid.split('/')[-2] + '_' + vid.split('/')[-1]
 			outfile = '{}{}_{}:{}.wav'.format(WAVS_ROOT, vidname, ss, es)
-			print(outfile)
 			try:
 				model.vc(sample, outfile)
 			except KeyboardInterrupt:

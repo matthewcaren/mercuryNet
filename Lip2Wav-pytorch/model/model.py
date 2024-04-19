@@ -377,8 +377,6 @@ class Decoder(nn.Module):
 		B = memory.size(0)
 		decoder_input = Variable(memory.data.new(
 			B, self.num_mels * self.n_frames_per_step).zero_())
-		# print(decoder_input)
-		print('Decoder size', decoder_input.size())
 		return decoder_input
 
 	def initialize_decoder_states(self, memory, mask):
@@ -553,14 +551,16 @@ class Decoder(nn.Module):
 		alignments: sequence of attention weights from the decoder
 		'''
 		decoder_input = self.get_go_frame(memory)
-
 		self.initialize_decoder_states(memory, mask=None)
 
 		mel_outputs, gate_outputs, alignments = [], [], []
 		while True:
 			decoder_input = self.prenet(decoder_input)
 			mel_output, gate_output, alignment = self.decode(decoder_input)
+			# 
+			# print("ALI", alignment.shape)
 			mel_outputs += [mel_output.squeeze(1)]
+			#print("MEL", mel_output.shape)
 			gate_outputs += [gate_output]
 			alignments += [alignment]
 
@@ -654,7 +654,8 @@ class Tacotron2(nn.Module):
 		mel_outputs, gate_outputs, alignments = self.decoder(
 			encoder_outputs, mels, memory_lengths=vid_lengths)
 
-		mel_outputs_postnet = self.postnet(mel_outputs)
+		mel_output
+		s_postnet = self.postnet(mel_outputs)
 		mel_outputs_postnet = mel_outputs + mel_outputs_postnet
 
 		return self.parse_output(
@@ -675,7 +676,7 @@ class Tacotron2(nn.Module):
 		embedded_inputs = vid_inputs.type(torch.FloatTensor)
 
 		encoder_outputs = self.encoder.inference(embedded_inputs.to(device))
-
+		print("ENC", encoder_outputs.shape)
 		mel_outputs, gate_outputs, alignments = self.decoder.inference(
 			encoder_outputs)
 		mel_outputs_postnet = self.postnet(mel_outputs)
@@ -702,4 +703,5 @@ class Tacotron2(nn.Module):
 		mel_outputs_postnet = mel_outputs + mel_outputs_postnet
 
 		return self.parse_output(
-			[mel_outputs, mel_outputs_postnet, gate_outputs, alignments])
+			[mel_outputs, mel_outputs_postnet, gate_outputs, alignments]
+		)

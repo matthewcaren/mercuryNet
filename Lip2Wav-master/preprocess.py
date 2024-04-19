@@ -17,7 +17,7 @@ from tqdm import tqdm
 from glob import glob
 from synthesizer import audio
 from synthesizer.hparams import hparams as hp
-
+import time
 import face_detection
 
 
@@ -34,8 +34,7 @@ args = parser.parse_args()
 
 # fa = [face_detection.FaceAlignment(face_detection.LandmarksType._2D, flip_input=False, 
 # 									device='cuda:{}'.format(id)) for id in range(args.ngpu)]
-fa = [face_detection.FaceAlignment(face_detection.LandmarksType._2D, flip_input=False, 
-									device='mps') for id in range(args.ngpu)]
+
 
 template = 'ffmpeg -loglevel panic -y -i {} -ar {} -f wav {}'
 template2 = 'ffmpeg -hide_banner -loglevel panic -threads 1 -y -i {} -async 1 -ac 1 -vn -acodec pcm_s16le -ar 16000 {}'
@@ -54,8 +53,10 @@ def crop_frame(frame, args):
 
 def process_video_file(vfile, args, gpu_id):
 	video_stream = cv2.VideoCapture(vfile)
-	
+	start = time.time()
 	frames = []
+	fa = [face_detection.FaceAlignment(face_detection.LandmarksType._2D, flip_input=False, 
+									device='mps') for id in range(args.ngpu)]
 	while 1:
 		still_reading, frame = video_stream.read()
 		if not still_reading:
@@ -88,7 +89,6 @@ def process_video_file(vfile, args, gpu_id):
 	i = -1
 	for fb in batches:
 		preds = fa[gpu_id].get_detections_for_batch(np.asarray(fb))
-
 		for j, f in enumerate(preds):
 			i += 1
 			if f is None:
@@ -102,7 +102,6 @@ def process_audio_file(vfile, args, gpu_id):
 	fulldir = fulldir[:fulldir.rfind('.')] # ignore extension
 
 	os.makedirs(fulldir, exist_ok=True)
-
 	wavpath = path.join(fulldir, 'audio.wav')
 	specpath = path.join(fulldir, 'mels.npz')
 
@@ -116,8 +115,11 @@ def process_audio_file(vfile, args, gpu_id):
 def mp_handler(job):
 	vfile, args, gpu_id = job
 	try:
+		start = time.time()
 		process_video_file(vfile, args, gpu_id)
+		print(time.time() - start)
 		process_audio_file(vfile, args, gpu_id)
+		print(time.time() - start)
 	except KeyboardInterrupt:
 		exit(0)
 	except:

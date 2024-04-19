@@ -13,7 +13,7 @@ class hparams:
 	num_mels = 80
 	num_freq = 1025
 	sample_rate = 16000
-	frame_length_ms = 50
+	frame_length_ms = 33
 	frame_shift_ms = 12.5
 	preemphasis = 0.97
 	min_level_db = -100
@@ -34,7 +34,7 @@ class hparams:
 	n_frames_per_step = 2
 	decoder_rnn_dim = 1024
 	prenet_dim = 256
-	max_decoder_steps = 240
+	max_decoder_steps = 120 ## Jonas - ALIGNMENT SIZE
 	gate_threshold = 0.5
 	p_attention_dropout = 0.1
 	p_decoder_dropout = 0.1
