@@ -380,8 +380,6 @@ class MercuryNet(nn.Module):
         self.embedding.weight.data.uniform_(-val, val)
         # self.encoder = Encoder()
         self.encoder = Encoder3D(hps).to(device)
-        self.decoder = Decoder().to(device)
-        self.postnet = Postnet().to(device)
 
     def parse_batch(self, batch):
         text_padded, input_lengths, mel_padded, gate_padded, output_lengths = batch
@@ -423,21 +421,6 @@ class MercuryNet(nn.Module):
             (mel_padded, gate_padded),
         )
 
-    def parse_output(self, outputs, output_lengths=None):
-        if self.mask_padding and output_lengths is not None:
-            mask = ~get_mask_from_lengths(output_lengths, True)  # (B, T)
-            mask = mask.expand(self.num_mels, mask.size(0), mask.size(1))  # (80, B, T)
-            mask = mask.permute(1, 0, 2)  # (B, 80, T)
-
-            outputs[0].data.masked_fill_(mask, 0.0)  # (B, 80, T)
-            outputs[1].data.masked_fill_(mask, 0.0)  # (B, 80, T)
-            slice = torch.arange(0, mask.size(2), self.n_frames_per_step)
-            outputs[2].data.masked_fill_(
-                mask[:, 0, slice], 1e3
-            )  # gate energies (B, T//n_frames_per_step)
-
-        return outputs
-
     def forward(self, inputs):
         vid_inputs, vid_lengths, mels, max_len, output_lengths = inputs
         vid_lengths, output_lengths = vid_lengths.data, output_lengths.data
@@ -448,16 +431,8 @@ class MercuryNet(nn.Module):
         encoder_outputs = self.encoder(
             embedded_inputs.to(device), vid_lengths.to(device)
         )
-        mel_outputs, gate_outputs, alignments = self.decoder(
-            encoder_outputs, mels, memory_lengths=vid_lengths
-        )
 
-        s_postnet = self.postnet(mel_outputs)
-        mel_outputs_postnet = mel_outputs + mel_outputs_postnet
-
-        return self.parse_output(
-            [mel_outputs, mel_outputs_postnet, gate_outputs, alignments], output_lengths
-        )
+        return encoder_outputs
 
     def inference(self, inputs, mode="train"):
         if mode == "train":
@@ -471,18 +446,9 @@ class MercuryNet(nn.Module):
         # embedded_inputs = self.embedding(inputs).transpose(1, 2)
 
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
-
         encoder_outputs = self.encoder.inference(embedded_inputs.to(device))
-        print("ENC", encoder_outputs.shape)
-        mel_outputs, gate_outputs, alignments = self.decoder.inference(encoder_outputs)
-        mel_outputs_postnet = self.postnet(mel_outputs)
 
-        mel_outputs_postnet = mel_outputs + mel_outputs_postnet
-        outputs = self.parse_output(
-            [mel_outputs, mel_outputs_postnet, gate_outputs, alignments]
-        )
-
-        return outputs
+        return encoder_outputs
 
     def teacher_infer(self, inputs, mels):
         il, _ = torch.sort(
