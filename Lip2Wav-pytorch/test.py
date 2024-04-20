@@ -194,6 +194,7 @@ if __name__ == "__main__":
     for vid in videos:
         vidpath = vid + "/"
         for (ss, es), images in contiguous_window_generator(vidpath):
+            print(ss, es)
             sample = {}
             sample["images"] = images
             vidname = vid.split("/")[-2] + "_" + vid.split("/")[-1]
