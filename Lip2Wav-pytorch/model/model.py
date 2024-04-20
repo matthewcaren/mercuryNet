@@ -426,11 +426,12 @@ class MercuryNet(nn.Module):
         vid_lengths, output_lengths = vid_lengths.data, output_lengths.data
 
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
-        # print('vid_inputs',vid_inputs)
 
         encoder_outputs = self.encoder(
             embedded_inputs.to(device), vid_lengths.to(device)
         )
+
+        print("ENCODER OUTPUT", encoder_outputs)
 
         return encoder_outputs
 
