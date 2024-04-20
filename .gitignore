@@ -1,7 +1,7 @@
 # Custom
 .DS_Store
 vids/
-Lip2Wav-pytorch/checkpoints/ckpt_223000
+Lip2Wav-pytorch/checkpoints/ckpt_223000.pt
 yolov8m-face.pt
 
 # Byte-compiled / optimized / DLL files

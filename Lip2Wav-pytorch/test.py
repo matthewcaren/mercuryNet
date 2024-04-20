@@ -65,20 +65,10 @@ class Generator(object):
         all_windows.append(images[i : len(images)])
 
         for window_idx, window_fnames in enumerate(all_windows):
-            print("Window", window_idx)
             images = self.read_window(window_fnames)
             # s = self.synthesizer.synthesize_spectrograms(images)[0] ######
-            mel_outputs, mel_outputs_postnet, alignments = infer_vid(
-                images, self.synthesizer, mode="test"
-            )
-
-            s = mel_outputs_postnet.squeeze(0).contiguous().cpu().detach().numpy()
-            if window_idx == 0:
-                mel = s
-            else:
-                mel = np.concatenate((mel, s[:, hps.mel_overlap :]), axis=1)
-        wav = audio.inv_mel_spectrogram(mel, hps)
-        audio.save_wav(wav, outfile, sr=hps.sample_rate)
+            model_output = infer_vid(images, self.synthesizer, mode="test")
+            print("OUTPUT:", model_output.shape)
 
 
 def to_sec(idx):
@@ -87,52 +77,25 @@ def to_sec(idx):
     return sec
 
 
-def contiguous_window_generator(vidpath):
+def frames_generator(vidpath):
     frames = glob(os.path.join(vidpath, "*.jpg"))
+
     if len(frames) < hps.T:
         return
 
-    ids = [int(os.path.splitext(os.path.basename(f))[0]) for f in frames]
-    sortedids = sorted(ids)
-    end_idx = 0
-    start = sortedids[end_idx]
-
-    while end_idx < len(sortedids):
-        while end_idx < len(sortedids):
-            if end_idx == len(sortedids) - 1:
-                if sortedids[end_idx] + 1 - start >= hps.T:
-                    yield (
-                        (to_sec(start), to_sec(sortedids[end_idx])),
-                        [
-                            os.path.join(vidpath, "{}.jpg".format(x))
-                            for x in range(start, sortedids[end_idx] + 1)
-                        ],
-                    )
-                return
-            else:
-                if sortedids[end_idx] + 1 == sortedids[end_idx + 1]:
-                    end_idx += 1
-                else:
-                    if sortedids[end_idx] + 1 - start >= hps.T:
-                        yield (
-                            (to_sec(start), to_sec(sortedids[end_idx])),
-                            [
-                                os.path.join(vidpath, "{}.jpg".format(x))
-                                for x in range(start, sortedids[end_idx] + 1)
-                            ],
-                        )
-                    break
-
-        end_idx += 1
-        start = sortedids[end_idx]
+    yield frames
 
 
 def load_model(ckpt_pth):
-    device = torch.device("cpu")
+    device = torch.device("mps")
 
-    ckpt_dict = torch.load(ckpt_pth, map_location=device)
+    checkpoint_dict = torch.load(ckpt_pth, map_location=device)["model"]
     model = MercuryNet()
-    model.load_state_dict(ckpt_dict["model"])
+    model_dict = model.state_dict()
+    pretrained_dict = {k: v for k, v in checkpoint_dict.items() if k in model_dict}
+    model_dict.update(pretrained_dict)
+
+    model.load_state_dict(pretrained_dict)
     # for name, param in model.named_parameters():
     # 	print("Name", name)
     model = mode(model, True).eval()
@@ -164,7 +127,7 @@ if __name__ == "__main__":
 
     # sif.hparams.set_hparam('eval_ckpt', args.checkpoint)
     videos = [
-        f
+        os.path.join(args.data_root, f)
         for f in os.listdir(args.data_root)
         if os.path.isdir(os.path.join(args.data_root, f))
     ]
@@ -192,12 +155,13 @@ if __name__ == "__main__":
 
     template = "ffmpeg -y -loglevel panic -ss {} -i {} -to {} -strict -2 {}"
     for vid in videos:
+        print("generating for VID:", vid)
         vidpath = vid + "/"
-        for (ss, es), images in contiguous_window_generator(vidpath):
+        for images in frames_generator(vidpath):
             sample = {}
             sample["images"] = images
-            vidname = vid.split("/")[-2] + "_" + vid.split("/")[-1]
-            outfile = "{}{}_{}:{}.wav".format(WAVS_ROOT, vidname, ss, es)
+            vidname = vid.split("/")[-1]
+            outfile = "{}{}.wav".format(WAVS_ROOT, vidname)
             try:
                 model.vc(sample, outfile)
             except KeyboardInterrupt:
@@ -207,10 +171,10 @@ if __name__ == "__main__":
                 continue
 
             command = template.format(
-                ss,
+                0,
                 vidpath + "audio.wav",
-                es,
-                "{}{}_{}:{}.wav".format(GTS_ROOT, vidname, ss, es),
+                len(images),
+                "{}{}.wav".format(GTS_ROOT, vidname),
             )
 
             subprocess.call(command, shell=True)
