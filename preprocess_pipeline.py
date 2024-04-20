@@ -105,11 +105,12 @@ def process_rows(dataFrame):
                     print("Could not confidently detect faces in all frames for", vid_dir)
                     shutil.rmtree(vid_dir)
         except:
+            shutil.rmtree(vid_dir)
             print("Something failed for row:", row[0])
             
 if __name__ == '__main__':
     start = time.time()
     raw_data = pd.read_csv('./data/avspeech_test_langs.csv')
-    dataFrame = np.array(raw_data)[1138:1145]
+    dataFrame = np.array(raw_data)[2500:10000]
     process_rows(dataFrame)
     print(time.time() - start)
