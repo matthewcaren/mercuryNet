@@ -11,13 +11,11 @@ import sys, cv2, os, pickle, argparse, subprocess
 
 from model.model import MercuryNet
 from hparams import hparams as hps
-import utils.audio_v as audio
 from utils.util import mode, to_var, to_arr
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 torch.manual_seed(0)
-# torch.cuda.manual_seed_all(0)
 
 
 class Generator(object):
