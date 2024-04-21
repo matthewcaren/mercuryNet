@@ -92,6 +92,8 @@ def load_model(ckpt_pth):
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
 
+    print("using device:", device)
+
     checkpoint_dict = torch.load(ckpt_pth, map_location=device)["model"]
     model = MercuryNet()
     model_dict = model.state_dict()
