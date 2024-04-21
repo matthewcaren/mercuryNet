@@ -87,10 +87,10 @@ def frames_generator(vidpath):
 
 def load_model(ckpt_pth):
     device = torch.device("cpu")
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")
     if torch.cuda.is_available():
         device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
 
     checkpoint_dict = torch.load(ckpt_pth, map_location=device)["model"]
     model = MercuryNet()
