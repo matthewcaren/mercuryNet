@@ -16,6 +16,7 @@ from utils.util import mode, to_var, to_arr
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 torch.manual_seed(0)
+# torch.cuda.manual_seed_all(0)
 
 
 class Generator(object):
@@ -85,7 +86,11 @@ def frames_generator(vidpath):
 
 
 def load_model(ckpt_pth):
-    device = torch.device("mps")
+    device = torch.device("cpu")
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
 
     checkpoint_dict = torch.load(ckpt_pth, map_location=device)["model"]
     model = MercuryNet()
