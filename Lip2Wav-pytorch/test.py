@@ -11,7 +11,6 @@ import sys, cv2, os, pickle, argparse, subprocess
 
 from model.model import MercuryNet
 from hparams import hparams as hps
-import utils.audio_v as audio
 from utils.util import mode, to_var, to_arr
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -87,7 +86,13 @@ def frames_generator(vidpath):
 
 
 def load_model(ckpt_pth):
-    device = torch.device("mps")
+    device = torch.device("cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+
+    print("using device:", device)
 
     checkpoint_dict = torch.load(ckpt_pth, map_location=device)["model"]
     model = MercuryNet()
