@@ -83,7 +83,7 @@ def train(args):
         eps=hps.eps,
         weight_decay=hps.weight_decay,
     )
-    criterion = MercuryNetLoss()
+    loss_func = MercuryNetLoss()
 
     # load checkpoint
     iteration = 1
@@ -132,17 +132,8 @@ def train(args):
             y_pred = model(x)
 
             # loss
-            mel_loss, mel_loss_post, l1_loss, gate_loss = criterion(
-                y_pred, y, iteration
-            )
+            loss = loss_func(y_pred, y, iteration)
 
-            loss = mel_loss + mel_loss_post + l1_loss + gate_loss
-            items = [
-                mel_loss.item(),
-                mel_loss_post.item(),
-                l1_loss.item(),
-                gate_loss.item(),
-            ]
             # zero grad
             model.zero_grad()
 
@@ -159,20 +150,15 @@ def train(args):
             dur = time.perf_counter() - start
             print(
                 "Iter: {} Loss: {:.5f} Grad Norm: {:.5f} {:.1f}s/it".format(
-                    iteration, sum(items), grad_norm, dur
+                    iteration, loss, grad_norm, dur
                 )
             )
-
-            # # log
-            # if args.log_dir != '' and (iteration % hps.iters_per_log == 0):
-            # 	learning_rate = optimizer.param_groups[0]['lr']
-            # 	logger.log_training(item, grad_norm, learning_rate, iteration)
 
             # log vid
             if args.log_dir != "" and (iteration % hps.iters_per_log == 0):
                 learning_rate = optimizer.param_groups[0]["lr"]
                 logger.log_training_vid(
-                    y_pred, y, items, grad_norm, learning_rate, iteration
+                    y_pred, y, loss, grad_norm, learning_rate, iteration
                 )
 
             # sample

@@ -1,13 +1,16 @@
 import torch
 from torch import nn
 from math import sqrt
+import sys
+sys.path.append('../')
 from hparams import hparams as hps
 from torch.autograd import Variable
 from torch.nn import functional as F
-from model.layers import ConvNorm, LinearNorm, ConvNorm3D
+from model.layers import ConvNorm, LinearNorm, ConvNorm2D, ConvNorm3D
 from utils.util import to_var, get_mask_from_lengths
+import numpy as np
 
-device = torch.device("cpu")
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
 class MercuryNetLoss(nn.Module):
@@ -15,143 +18,17 @@ class MercuryNetLoss(nn.Module):
         super(MercuryNetLoss, self).__init__()
 
     def forward(self, model_output, targets, iteration):
-        mel_target, gate_target = targets[0], targets[1]
-        mel_target.requires_grad = False
-        gate_target.requires_grad = False
-        slice = torch.arange(0, gate_target.size(1), hps.n_frames_per_step)
-        gate_target = gate_target[:, slice].view(-1, 1)
+        target_f0, target_voiced, target_amp = targets[0,:], targets[1,:], targets[2,:]
 
-        mel_out, mel_out_postnet, gate_out, _ = model_output
-        gate_out = gate_out.view(-1, 1)
-        p = hps.p
-        mel_loss = nn.MSELoss()(p * mel_out, p * mel_target)
-        mel_loss_post = nn.MSELoss()(p * mel_out_postnet, p * mel_target)
-        gate_loss = nn.BCEWithLogitsLoss()(gate_out, gate_target)
+        masked_f0_output = model_output[0,:]
+        masked_f0_output[target_voiced == 1] = 0
+        target_f0[target_voiced == 1] = 0
 
-        # added
-        l1_loss = nn.L1Loss()(mel_target, mel_out)
-        return (
-            mel_loss,
-            mel_loss_post,
-            l1_loss,
-            gate_loss,
-        )  # , ((mel_loss+mel_loss_post)/(p**2)+gate_loss+l1_loss).item()
-
-
-class LocationLayer(nn.Module):
-    def __init__(self, attention_n_filters, attention_kernel_size, attention_dim):
-        super(LocationLayer, self).__init__()
-        padding = int((attention_kernel_size - 1) / 2)
-        self.location_conv = ConvNorm(
-            2,
-            attention_n_filters,
-            kernel_size=attention_kernel_size,
-            padding=padding,
-            bias=False,
-            stride=1,
-            dilation=1,
-        )
-        self.location_dense = LinearNorm(
-            attention_n_filters, attention_dim, bias=False, w_init_gain="tanh"
-        )
-
-    def forward(self, attention_weights_cat):
-        processed_attention = self.location_conv(attention_weights_cat)
-        processed_attention = processed_attention.transpose(1, 2)
-        processed_attention = self.location_dense(processed_attention)
-        return processed_attention
-
-
-class Attention(nn.Module):
-    def __init__(
-        self,
-        attention_rnn_dim,
-        embedding_dim,
-        attention_dim,
-        attention_location_n_filters,
-        attention_location_kernel_size,
-    ):
-        super(Attention, self).__init__()
-        self.query_layer = LinearNorm(
-            attention_rnn_dim, attention_dim, bias=False, w_init_gain="tanh"
-        )
-        self.memory_layer = LinearNorm(
-            embedding_dim, attention_dim, bias=False, w_init_gain="tanh"
-        )
-        self.v = LinearNorm(attention_dim, 1, bias=False)
-        self.location_layer = LocationLayer(
-            attention_location_n_filters, attention_location_kernel_size, attention_dim
-        )
-        self.score_mask_value = -float("inf")
-
-    def get_alignment_energies(self, query, processed_memory, attention_weights_cat):
-        """
-        PARAMS
-        ------
-        query: decoder output (batch, num_mels * n_frames_per_step)
-        processed_memory: processed encoder outputs (B, T_in, attention_dim)
-        attention_weights_cat: cumulative and prev. att we;[ights (B, 2, max_time)
-
-        RETURNS
-        -------
-        alignment (batch, max_time)
-        """
-
-        processed_query = self.query_layer(query.unsqueeze(1))
-        processed_attention_weights = self.location_layer(attention_weights_cat)
-        energies = self.v(
-            torch.tanh(processed_query + processed_attention_weights + processed_memory)
-        )
-
-        energies = energies.squeeze(-1)
-        return energies
-
-    def forward(
-        self,
-        attention_hidden_state,
-        memory,
-        processed_memory,
-        attention_weights_cat,
-        mask,
-    ):
-        """
-        PARAMS
-        ------
-        attention_hidden_state: attention rnn last output
-        memory: encoder outputs
-        processed_memory: processed encoder outputs
-        attention_weights_cat: previous and cummulative attention weights
-        mask: binary mask for padded data
-        """
-        alignment = self.get_alignment_energies(
-            attention_hidden_state, processed_memory, attention_weights_cat
-        )
-
-        if mask is not None:
-            alignment.data.masked_fill_(mask, self.score_mask_value)
-
-        attention_weights = F.softmax(alignment, dim=1)
-        attention_context = torch.bmm(attention_weights.unsqueeze(1), memory)
-        attention_context = attention_context.squeeze(1)
-
-        return attention_context, attention_weights
-
-
-class Prenet(nn.Module):
-    def __init__(self, in_dim, sizes):
-        super(Prenet, self).__init__()
-        in_sizes = [in_dim] + sizes[:-1]
-        self.layers = nn.ModuleList(
-            [
-                LinearNorm(in_size, out_size, bias=False)
-                for (in_size, out_size) in zip(in_sizes, sizes)
-            ]
-        )
-
-    def forward(self, x):
-        for linear in self.layers:
-            x = F.dropout(F.relu(linear(x)), p=0.5, training=True)
-        return x
+        loss = 0
+        loss += hps.f0_penalty * torch.nn.MSELoss(masked_f0_output, target_f0)
+        loss += hps.voiced_penalty * torch.nn.MSELoss(target_voiced, model_output[1,:])
+        loss += hps.amp_penalty * torch.nn.MSELoss(target_amp, model_output[2,:])
+        return loss
 
 
 class Encoder(nn.Module):
@@ -364,6 +241,89 @@ class Encoder3D(nn.Module):
         return outputs
 
 
+class Decoder(nn.Module):
+    def __init__(self):
+        super(Decoder, self).__init__()
+
+        self.fc1 = torch.nn.Sequential(
+            torch.nn.Linear(384, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, 512),
+            torch.nn.ReLU()
+        )
+
+        self.conv1 = torch.nn.Sequential(
+            # depth-wise conv to expand channel space
+            ConvNorm(in_channels=512, out_channels=512, kernel_size=5),
+            torch.nn.ReLU(),
+            ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
+            torch.nn.ReLU(),
+            ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
+            torch.nn.ReLU(),
+        )
+
+        self.fc2 = torch.nn.Sequential(
+            torch.nn.Linear(512, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, 256),
+            torch.nn.ReLU(),
+        )
+
+        self.conv2 = torch.nn.Sequential(
+            ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
+            torch.nn.ReLU(),
+            ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
+            torch.nn.ReLU(),
+            ConvNorm(in_channels=256, out_channels=128, kernel_size=3),
+            torch.nn.ReLU(),
+            ConvNorm(in_channels=128, out_channels=64, kernel_size=3),
+            torch.nn.ReLU(),
+        )
+
+        self.fc3 = torch.nn.Sequential(
+            torch.nn.Linear(64, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
+        )
+
+        self.fc_out = torch.nn.Sequential(
+            torch.nn.Linear(32, 3)
+        )
+        
+
+    def forward(self, x):
+        x = self.fc1(x)         # expand feature space      (time, 512)
+        x = x.transpose(-2, -1) # flip time, channel dims   (512, time)
+
+        x = self.conv1(x)       # 1st conv block            (512, time)
+        x = x.transpose(-2, -1) # flip feat, time dims      (time, 512)
+
+        x = self.fc2(x)         # linear                    (time, 256)
+        x = x.transpose(-2, -1) # flip feat, time dims      (256, time)
+
+        x = self.conv2(x)       # 2nd conv block            (256, time)
+        x = x.transpose(-2, -1) # flip feat, time dims      (time, 64)
+
+        x = self.fc3(x)         # linear                    (time, 32)
+        x = self.fc_out(x)      # linear                    (time, 3)
+
+        x[0] = torch.exp(x[0])  # make f0 log scale
+        x[2] = torch.exp(x[2])  # make loudness log scale (dB)
+
+        return x
+
+    def inference(self, x):
+        for conv in self.convolutions:
+            x = F.dropout(conv(x), 0.5, self.training)
+
+        x = x.permute(0, 2, 1, 3, 4).squeeze(4).squeeze(3).contiguous()
+        # self.lstm.flatten_parameters()
+        outputs, _ = self.lstm(x)  # x:B,T,C
+
+        return outputs
+
+
 def is_end_of_frames(output, eps=0.2):
     return (output.data <= eps).all()
 
@@ -378,8 +338,8 @@ class MercuryNet(nn.Module):
         std = sqrt(2.0 / (hps.n_symbols + hps.symbols_embedding_dim))
         val = sqrt(3.0) * std  # uniform bounds for std
         self.embedding.weight.data.uniform_(-val, val)
-        # self.encoder = Encoder()
         self.encoder = Encoder3D(hps).to(device)
+        self.decoder = Decoder().to(device)
 
     def parse_batch(self, batch):
         text_padded, input_lengths, mel_padded, gate_padded, output_lengths = batch
@@ -431,9 +391,10 @@ class MercuryNet(nn.Module):
             embedded_inputs.to(device), vid_lengths.to(device)
         )
 
-        print("ENCODER OUTPUT", encoder_outputs)
+        print("encoding has shape:", encoder_outputs.shape)
 
-        return encoder_outputs
+        decoder_output = self.decoder(encoder_outputs)
+        return decoder_output
 
     def inference(self, inputs, mode="train"):
         if mode == "train":
@@ -448,8 +409,9 @@ class MercuryNet(nn.Module):
 
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
         encoder_outputs = self.encoder.inference(embedded_inputs.to(device))
-
-        return encoder_outputs
+        print("encoding has shape:", encoder_outputs.shape)
+        decoder_output = self.decoder(encoder_outputs)
+        return decoder_output
 
     def teacher_infer(self, inputs, mels):
         il, _ = torch.sort(

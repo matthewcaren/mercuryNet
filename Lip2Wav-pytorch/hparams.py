@@ -71,8 +71,9 @@ class hparams:
     weight_decay = 1e-6
     grad_clip_thresh = 1.0
     mask_padding = True
-    p = 10  # mel spec loss penalty
-    eg_text = "Make America great again!"
+    f0_penalty = 10
+    voiced_penalty = 10
+    amp_penalty = 100
 
     ############# added
     iscrop = True

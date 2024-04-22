@@ -100,9 +100,7 @@ def load_model(ckpt_pth):
     pretrained_dict = {k: v for k, v in checkpoint_dict.items() if k in model_dict}
     model_dict.update(pretrained_dict)
 
-    model.load_state_dict(pretrained_dict)
-    # for name, param in model.named_parameters():
-    # 	print("Name", name)
+    model.load_state_dict(model_dict)
     model = mode(model, True).eval()
     return model
 
