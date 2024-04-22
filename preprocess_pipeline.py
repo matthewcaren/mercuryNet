@@ -9,6 +9,7 @@ import cv2
 from ultralytics import YOLO
 import librosa
 import shutil 
+import argparse
 
 AUDIO_SR = 22050
 VID_FRAME_RATE = 30
@@ -36,13 +37,10 @@ def extract_features(wav_path):
                               center=True).squeeze()
     return np.stack((f0, voiced_flag, rms))
 
-def process_rows(dataFrame):
-    model = YOLO('yolov8m-face.pt')
+def process_rows(model, dataFrame):
     batch_size = 32
     output_dir = './vids'
-    print(f'Processing rows {dataFrame[0][0]} to {dataFrame[-1][0]} of test dataset')
     for row in dataFrame:
-        if row[0] % 100 == 0: print("Starting row", row[0])
         # Download video and make directories
         try:
             vid_id = f"{row[1]}_{str(row[2])}"
@@ -52,7 +50,7 @@ def process_rows(dataFrame):
             vid_path = os.path.join(output_dir, vid_id, f'{vid_id}.mp4')
             wav_path = os.path.join(output_dir, vid_id, f'{vid_id}.wav')
             if not os.path.exists(vid_path):
-                command = f'yt-dlp --extractor-args "youtube:player_client=web" -q -f "(bestvideo+bestaudio/best)[protocolup=dash]" -o {vid_id}.mp4 --download-sections *{row[2]}-{row[3]} --format 18 -P {vid_dir}  "https://www.youtube.com/watch?v={vid_id}"'
+                command = f'yt-dlp --extractor-args "youtube:player_client=web" -f "(bestvideo+bestaudio/best)[protocolup=dash]" -q -o {vid_id}.mp4 --download-sections *{row[2]}-{row[3]} --format 18 -P {vid_dir}  "https://www.youtube.com/watch?v={vid_id}"'
                 subprocess.run(shlex.split(command))
             if not os.path.exists(vid_path):
                 os.rmdir(vid_dir)
@@ -109,8 +107,15 @@ def process_rows(dataFrame):
             print("Something failed for row:", row[0])
             
 if __name__ == '__main__':
-    start = time.time()
+    parser = argparse.ArgumentParser(prog='Preprocess 10 rows')
+    parser.add_argument('-s', '--start', help = 'starting point', required=True)
+    parser.add_argument('-c', '--count', help = 'how many rows to process', required=True)
+    args = parser.parse_args()
+    start = int(args.start)
+    count = int(args.count)
+    start_time = time.time()
     raw_data = pd.read_csv('./data/avspeech_test_langs.csv')
-    dataFrame = np.array(raw_data)[2500:10000]
-    process_rows(dataFrame)
-    print(time.time() - start)
+    dataFrame = np.array(raw_data)[start:start+count]
+    model = YOLO('yolov8m-face.pt')
+    process_rows(model, dataFrame)
+    print(f'Processing time for rows {start} to {start + count - 1} is {time.time() - start_time} seconds.\n')

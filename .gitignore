@@ -3,6 +3,7 @@
 vids/
 Lip2Wav-pytorch/checkpoints/ckpt_223000.pt
 yolov8m-face.pt
+vids_2500_6000/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
