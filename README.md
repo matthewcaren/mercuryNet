@@ -4,7 +4,8 @@ The Roman god Mercury is the god of translators and interpreters.
 
 ## setup
 
-Create a new conda environment: `conda create --name='mercury'`
-Install Python 3.8 (required for TF metal support): `conda install python=3.8`
-Install the requirements: `pip install -r requirements.txt`
-Install _soundfile_: `conda install -c conda-forge libsndfile`
+
+## running train/test
+
+Test: `python test.py --data_root=../vids/ --results_root=results/ --checkpoint=./checkpoints/lip2wav.pt `
+Train: `python train.py -d ../vids/ -l ./log/ -cd ./checkpoints/ -cp ./checkpoints/lip2wav.pt`
