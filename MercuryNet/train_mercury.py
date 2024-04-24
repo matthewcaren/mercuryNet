@@ -89,4 +89,4 @@ train_dataset = AVSpeechDataset('./vids_10', transform_func)
 dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 optim = torch.optim.Adam(model.parameters())
 
-train(dataloader, optim, 4)
+train(model, dataloader, optim, 4)
