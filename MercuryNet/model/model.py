@@ -20,14 +20,21 @@ class MercuryNetLoss(nn.Module):
     def forward(self, model_output, targets, iteration):
         target_f0, target_voiced, target_amp = targets[0,:], targets[1,:], targets[2,:]
 
+        # only care about f0 when it's voiced (so there's a valid ground truth)
         masked_f0_output = model_output[0,:]
-        masked_f0_output[target_voiced == 1] = 0
-        target_f0[target_voiced == 1] = 0
+        masked_f0_output[target_voiced == 0] = 0
+        target_f0[target_voiced == 0] = 0
+
+        target_f0 = torch.nan_to_num(torch.log(target_f0))
+        output_f0 = torch.nan_to_num(torch.log(masked_f0_output))
+
+        target_amp = torch.nan_to_num(torch.log(target_amp))
+        output_amp = torch.nan_to_num(torch.log(model_output[2,:]))
 
         loss = 0
-        loss += hps.f0_penalty * torch.nn.MSELoss(masked_f0_output, target_f0)
+        loss += hps.f0_penalty * torch.nn.MSELoss(output_f0, target_f0)
         loss += hps.voiced_penalty * torch.nn.MSELoss(target_voiced, model_output[1,:])
-        loss += hps.amp_penalty * torch.nn.MSELoss(target_amp, model_output[2,:])
+        loss += hps.amp_penalty * torch.nn.MSELoss(target_amp, output_amp)
         return loss
 
 
