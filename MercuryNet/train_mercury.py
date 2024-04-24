@@ -1,6 +1,6 @@
 import torch
 from model.model import MercuryNet, MercuryNetLoss
-import tqdm
+from tqdm import tqdm
 import torch.nn.functional as F
 from datetime import datetime
 import os
