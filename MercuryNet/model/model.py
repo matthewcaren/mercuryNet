@@ -17,7 +17,7 @@ class MercuryNetLoss(nn.Module):
     def __init__(self):
         super(MercuryNetLoss, self).__init__()
 
-    def forward(self, model_output, targets, iteration):
+    def forward(self, model_output, targets):
         target_f0, target_voiced, target_amp = targets[0,:], targets[1,:], targets[2,:]
 
         # only care about f0 when it's voiced (so there's a valid ground truth)

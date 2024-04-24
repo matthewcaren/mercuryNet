@@ -16,16 +16,21 @@ def train(dataloader, optimizer, epochs):
     model.train()
     train_loss = []
 
+    loss_func = MercuryNetLoss()
+
     batches = tqdm(enumerate(dataloader), total=len(dataloader))
     
     for epoch in range(epochs):
+        print("starting epoch", epoch)
         for batch_idx, (data, target) in batches:
             data_mps = data.to(device)
             target_mps = target.to(device)
             optimizer.zero_grad()
+
             output = model(data_mps)
 
-            loss = MercuryNetLoss()
+            loss = loss_func(output, target_mps)
+            
             loss.backward()
             optimizer.step()
 
