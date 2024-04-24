@@ -4,6 +4,7 @@ vids/
 MercuryNet/checkpoints/
 MercuryNet/results/
 yolov8m-face.pt
+vids_10/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -4,21 +4,41 @@ import tqdm
 import torch.nn.functional as F
 from datetime import datetime
 import os
+from torchvision import transforms
+import cv2
+import numpy as np
+from torch.utils.data import DataLoader
+
 
 
 class AVSpeechDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir):        
-        directories = [os.listdir(root_dir)]
-
+    def __init__(self, root_dir, transform=None):        
+        directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
+        self.transform = transform
         self.all_paths = []
 
         for dir in directories:
-            images = [d for d
-                      in os.listdir(os.path.join(root_dir, dir))
+            images = [os.path.join(root_dir, dir,d) for d
+                      in os.listdir(os.path.join(root_dir, dir)) 
                       if (os.path.isfile(os.path.join(root_dir, dir, d)) and d[-4:]=='.jpg')]
-            self.all_paths.append([images])
-        
-        
+            self.all_paths.append(images)
+
+    def __len__(self):
+        return len(self.all_paths)
+    
+    def __getitem__(self, idx):
+        paths = self.all_paths[idx]
+        imgs = []
+        sz = (96, 96)
+        for filename in paths:
+            img = cv2.imread(filename)
+            img = cv2.resize(img, sz)
+            imgs.append(img)
+        imgs = np.asarray(imgs) / 255.
+        imgs = torch.tensor(imgs)
+        if self.transform is not None:
+            imgs = self.transform(imgs)
+        return imgs
 
 
 def train(dataloader, optimizer, epochs):
@@ -33,7 +53,11 @@ def train(dataloader, optimizer, epochs):
     train_loss = []
 
     loss_func = MercuryNetLoss()
+    transform_func = transforms.Normalize(0.5, 0.5, 0.5, 0.5),
 
+    
+    train_dataset = AVSpeechDataset('./vids_10', transform_func)
+    dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
     batches = tqdm(enumerate(dataloader), total=len(dataloader))
     
     for epoch in range(epochs):
