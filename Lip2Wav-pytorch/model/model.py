@@ -313,16 +313,6 @@ class Decoder(nn.Module):
 
         return x
 
-    def inference(self, x):
-        for conv in self.convolutions:
-            x = F.dropout(conv(x), 0.5, self.training)
-
-        x = x.permute(0, 2, 1, 3, 4).squeeze(4).squeeze(3).contiguous()
-        # self.lstm.flatten_parameters()
-        outputs, _ = self.lstm(x)  # x:B,T,C
-
-        return outputs
-
 
 def is_end_of_frames(output, eps=0.2):
     return (output.data <= eps).all()
@@ -391,8 +381,6 @@ class MercuryNet(nn.Module):
             embedded_inputs.to(device), vid_lengths.to(device)
         )
 
-        print("encoding has shape:", encoder_outputs.shape)
-
         decoder_output = self.decoder(encoder_outputs)
         return decoder_output
 
@@ -404,14 +392,11 @@ class MercuryNet(nn.Module):
             vid_inputs = to_var(torch.from_numpy(vid_inputs)).float()
             vid_inputs = vid_inputs.permute(3, 0, 1, 2).unsqueeze(0).contiguous()
 
-        # vid_lengths, output_lengths = vid_lengths.data, output_lengths.data
-        # embedded_inputs = self.embedding(inputs).transpose(1, 2)
-
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
         encoder_outputs = self.encoder.inference(embedded_inputs.to(device))
-        print("encoding has shape:", encoder_outputs.shape)
         decoder_output = self.decoder(encoder_outputs)
         return decoder_output
+    
 
     def teacher_infer(self, inputs, mels):
         il, _ = torch.sort(
