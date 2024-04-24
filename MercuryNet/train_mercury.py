@@ -2,7 +2,7 @@ import torch
 from model.model import MercuryNet, MercuryNetLoss
 import tqdm
 import torch.nn.functional as F
-
+from datetime import datetime
 
 
 def train(dataloader, optimizer, epochs):
@@ -28,5 +28,16 @@ def train(dataloader, optimizer, epochs):
             loss = MercuryNetLoss()
             loss.backward()
             optimizer.step()
+
+    checkpoint_path = f"../checkpoints/ckpt_{datetime.today().strftime("%Y-%m-%d_%H-%M")}.pt"
+    
+    torch.save(
+        {
+            "model": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "iteration": epochs,
+        },
+        checkpoint_path,
+    )
 
     return train_loss
