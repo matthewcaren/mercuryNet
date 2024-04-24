@@ -16,10 +16,9 @@ class AVSpeechDataset(torch.utils.data.Dataset):
             images = [d for d
                       in os.listdir(os.path.join(root_dir, dir))
                       if (os.path.isfile(os.path.join(root_dir, dir, d)) and d[-4:]=='.jpg')]
-            all_paths.append([images])
+            self.all_paths.append([images])
         
-        self.all_paths = all_paths
-
+        
 
 
 def train(dataloader, optimizer, epochs):
