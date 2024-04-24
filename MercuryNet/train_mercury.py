@@ -41,14 +41,13 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         return imgs
 
 
-def train(dataloader, optimizer, epochs):
+def train(model, dataloader, optimizer, epochs):
     device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
 
-    model = MercuryNet()
     model.train()
     train_loss = []
 
@@ -84,9 +83,10 @@ def train(dataloader, optimizer, epochs):
 
 
 # do some training!
+model = MercuryNet()
 transform_func = transforms.Normalize(0.5, 0.5, 0.5),
 train_dataset = AVSpeechDataset('./vids_10', transform_func)
 dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-optim = torch.optim.Adam()
+optim = torch.optim.Adam(model.parameters())
 
 train(dataloader, optim, 4)
