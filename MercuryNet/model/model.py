@@ -212,29 +212,14 @@ class Encoder3D(nn.Module):
     def forward(self, x, input_lengths):
         for conv in self.convolutions:
             x = F.dropout(conv(x), 0.5, self.training)
-        # for i in range(len(self.convolutions)):
-        # 	if i==0 or i==1 or i ==2:
-        # 		with torch.no_grad():
-        # 			x = F.dropout(self.convolutions[i](x), 0.5, self.training)
-        # 	else:
-        # 		x = F.dropout(self.convolutions[i](x), 0.5, self.training)
 
-        x = (
-            x.permute(0, 2, 1, 3, 4).squeeze(4).squeeze(3).contiguous()
-        )  # [bs x 90 x encoder_embedding_dim]
-        # print(x.size())
+        # [bs x 90 x encoder_embedding_dim]
+        x = (x.permute(0, 2, 1, 3, 4).squeeze(4).squeeze(3).contiguous())
+
         # pytorch tensor are not reversible, hence the conversion
         input_lengths = input_lengths.cpu().numpy()
-        # x = nn.utils.rnn.pack_padded_sequence(
-        # 	x, input_lengths, batch_first=True)
-
-        # self.lstm.flatten_parameters()
         outputs, _ = self.lstm(x)
         print("output size", outputs.size())
-        # outputs, _ = nn.utils.rnn.pad_packed_sequence(
-        # 	outputs, batch_first=True)
-        # print('outputs', outputs.size())
-
         return outputs
 
     def inference(self, x):
@@ -242,7 +227,6 @@ class Encoder3D(nn.Module):
             x = F.dropout(conv(x), 0.5, self.training)
 
         x = x.permute(0, 2, 1, 3, 4).squeeze(4).squeeze(3).contiguous()
-        # self.lstm.flatten_parameters()
         outputs, _ = self.lstm(x)  # x:B,T,C
 
         return outputs
