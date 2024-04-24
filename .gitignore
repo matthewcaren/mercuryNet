@@ -1,7 +1,8 @@
 # Custom
 .DS_Store
 vids/
-Lip2Wav-pytorch/checkpoints/
+MercuryNet/checkpoints/
+MercuryNet/results/
 yolov8m-face.pt
 
 # Byte-compiled / optimized / DLL files
