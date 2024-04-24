@@ -84,10 +84,9 @@ def train(dataloader, optimizer, epochs):
 
 
 # do some training!
-transform_func = transforms.Normalize(0.5, 0.5, 0.5, 0.5),
+transform_func = transforms.Normalize(0.5, 0.5, 0.5),
 train_dataset = AVSpeechDataset('./vids_10', transform_func)
 dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-
 optim = torch.optim.Adam()
 
 train(dataloader, optim, 4)
