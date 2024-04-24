@@ -153,8 +153,8 @@ if __name__ == "__main__":
     for f in files_to_delete:
         os.remove(f)
 
-    tacotron = load_model(args.checkpoint)
-    model = Generator(tacotron)
+    lip2wav_ckpt = load_model(args.checkpoint)
+    model = Generator(lip2wav_ckpt)
 
     template = "ffmpeg -y -loglevel panic -ss {} -i {} -to {} -strict -2 {}"
     for vid in videos:
