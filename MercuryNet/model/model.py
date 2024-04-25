@@ -32,9 +32,9 @@ class MercuryNetLoss(nn.Module):
         output_amp = torch.log(model_output[:,:,2])
 
         loss = 0
-        loss += hps.f0_penalty * torch.nn.MSELoss(output_f0, target_f0)
-        loss += hps.voiced_penalty * torch.nn.MSELoss(target_voiced, model_output[:,:,1])
-        loss += hps.amp_penalty * torch.nn.MSELoss(target_amp, output_amp)
+        loss += hps.f0_penalty * F.mse_loss(output_f0, target_f0)
+        loss += hps.voiced_penalty * F.mse_loss(target_voiced, model_output[:,:,1])
+        loss += hps.amp_penalty * F.mse_loss(target_amp, output_amp)
         return loss
 
 
