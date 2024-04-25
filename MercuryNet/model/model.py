@@ -312,7 +312,6 @@ def is_end_of_frames(output, eps=0.2):
 class MercuryNet(nn.Module):
     def __init__(self):
         super(MercuryNet, self).__init__()
-        self.num_mels = hps.num_mels
         self.mask_padding = hps.mask_padding
         self.n_frames_per_step = hps.n_frames_per_step
         self.embedding = nn.Embedding(hps.n_symbols, hps.symbols_embedding_dim)
@@ -322,49 +321,9 @@ class MercuryNet(nn.Module):
         self.encoder = Encoder3D(hps).to(device)
         self.decoder = Decoder().to(device)
 
-    def parse_batch(self, batch):
-        text_padded, input_lengths, mel_padded, gate_padded, output_lengths = batch
-        text_padded = to_var(text_padded).long()
-        input_lengths = to_var(input_lengths).long()
-        max_len = torch.max(input_lengths.data).item()
-        mel_padded = to_var(mel_padded).float()
-        gate_padded = to_var(gate_padded).float()
-        output_lengths = to_var(output_lengths).long()
-
-        return (
-            (text_padded, input_lengths, mel_padded, max_len, output_lengths),
-            (mel_padded, gate_padded),
-        )
-
-    def parse_batch_vid(self, batch):
-        (
-            vid_padded,
-            input_lengths,
-            mel_padded,
-            gate_padded,
-            target_lengths,
-            split_infos,
-            embed_targets,
-        ) = batch
-        vid_padded = to_var(vid_padded).float()
-        input_lengths = to_var(input_lengths).float()
-        mel_padded = to_var(mel_padded).float()
-        gate_padded = to_var(gate_padded).float()
-        target_lengths = to_var(target_lengths).float()
-
-        max_len_vid = split_infos[0].data.item()
-        max_len_target = split_infos[1].data.item()
-
-        mel_padded = to_var(mel_padded).float()
-
-        return (
-            (vid_padded, input_lengths, mel_padded, max_len_vid, target_lengths),
-            (mel_padded, gate_padded),
-        )
-
     def forward(self, inputs):
-        vid_inputs, vid_lengths, mels, max_len, output_lengths = inputs
-        vid_lengths, output_lengths = vid_lengths.data, output_lengths.data
+        vid_inputs, vid_lengths = inputs
+        vid_lengths = vid_lengths.data
 
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
 
@@ -374,10 +333,11 @@ class MercuryNet(nn.Module):
 
         decoder_output = self.decoder(encoder_outputs)
         return decoder_output
+    
 
     def inference(self, inputs, mode="train"):
         if mode == "train":
-            vid_inputs, vid_lengths, mels, max_len, output_lengths = inputs
+            vid_inputs, vid_lengths = inputs
         else:
             vid_inputs = inputs
             vid_inputs = to_var(torch.from_numpy(vid_inputs)).float()
@@ -387,25 +347,3 @@ class MercuryNet(nn.Module):
         encoder_outputs = self.encoder.inference(embedded_inputs.to(device))
         decoder_output = self.decoder(encoder_outputs)
         return decoder_output
-    
-
-    def teacher_infer(self, inputs, mels):
-        il, _ = torch.sort(
-            torch.LongTensor([len(x) for x in inputs]), dim=0, descending=True
-        )
-        vid_lengths = to_var(il)
-
-        embedded_inputs = self.embedding(inputs).transpose(1, 2)
-
-        encoder_outputs = self.encoder(embedded_inputs, vid_lengths)
-
-        mel_outputs, gate_outputs, alignments = self.decoder(
-            encoder_outputs, mels, memory_lengths=vid_lengths
-        )
-
-        mel_outputs_postnet = self.postnet(mel_outputs)
-        mel_outputs_postnet = mel_outputs + mel_outputs_postnet
-
-        return self.parse_output(
-            [mel_outputs, mel_outputs_postnet, gate_outputs, alignments]
-        )
