@@ -322,8 +322,8 @@ class MercuryNet(nn.Module):
         self.decoder = Decoder().to(device)
 
     def forward(self, inputs):
-        vid_inputs, vid_lengths = inputs
-        vid_lengths = vid_lengths.data
+        vid_inputs = inputs
+        vid_lengths = vid_inputs.shape[0]
 
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
 
