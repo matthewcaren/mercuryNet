@@ -12,10 +12,12 @@ from torch.utils.data import DataLoader
 
 
 class AVSpeechDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir):        
+    def __init__(self, root_dir, overlap):        
         directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
         self.all_paths = []
         self.all_pros = []
+        self.windows = []
+        self.overlap = overlap
 
         for dir in directories:
             images = [os.path.join(root_dir, dir,d) for d
@@ -23,27 +25,42 @@ class AVSpeechDataset(torch.utils.data.Dataset):
                       if d.endswith('.jpg')]
             self.all_paths.append(images)
 
-            prosidy = [os.path.join(root_dir, dir, d) for d
-                      in os.listdir(os.path.join(root_dir, dir)) 
-                      if d.endswith('_pros.npy')]
-            
-            self.all_pros.append(prosidy[0])
+        for paths in self.all_paths:
+            num_images = len(paths)
+            vid_windows = self.get_windows(num_images)
+            for window in vid_windows:
+                self.windows.append((paths, window))
+
+    def get_windows(self, num_images):
+        num_windows = (num_images - 30) // 60
+        num_frames_in_window = num_windows*60 + 30
+        amount_to_chop_front = (num_images - num_frames_in_window) // 2
+        windows = []
+        for i in range(num_windows):
+            start = i*60 + amount_to_chop_front
+            windows.append([start, start + 90])
+        return windows
 
     def __len__(self):
-        return len(self.all_paths)
+        return len(self.windows)
     
     def __getitem__(self, idx):
-        paths = self.all_paths[idx]
+        paths, window = self.windows[idx]
+        paths = sorted(paths, key = lambda x: int(x.split('_')[-1].split('.')[0]))
+        windowed_paths = paths[window[0]:window[1]]
+        pros_path = '_'.join(paths[0].split('_')[:-1])+'_pros.npy'
+        target = np.load(pros_path)[:, window[0]:window[1]]
+        target = torch.tensor(target).T.type(torch.FloatTensor)
+
         imgs = []
         sz = (96, 96)
-        for filename in paths:
+        for filename in windowed_paths: 
             img = cv2.imread(filename)
             img = cv2.resize(img, sz)
             imgs.append(img)
         imgs = np.asarray(imgs) / 255.
         imgs = torch.tensor(imgs).permute(3,0,1,2)
-        target = torch.tensor(np.load(self.all_pros[idx])).T
-        target = target.type(torch.FloatTensor)
+
         return imgs, target
 
 
@@ -90,10 +107,10 @@ def train(model, dataloader, optimizer, epochs):
     return train_loss
 
 
-# do some training!
-model = MercuryNet()
-train_dataset = AVSpeechDataset('../vids_10')
-dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-optim = torch.optim.Adam(model.parameters())
+# # do some training!
+# model = MercuryNet()
+# train_dataset = AVSpeechDataset('../vids_10')
+# dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+# optim = torch.optim.Adam(model.parameters())
 
-train(model, dataloader, optim, 4)
+# train(model, dataloader, optim, 4)
