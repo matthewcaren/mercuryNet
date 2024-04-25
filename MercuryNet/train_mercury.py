@@ -43,6 +43,7 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         imgs = np.asarray(imgs) / 255.
         imgs = torch.tensor(imgs).permute(3,0,1,2)
         target = torch.tensor(np.load(self.all_pros[idx])).T
+        target = target.type(torch.FloatTensor)
         return imgs, target
 
 
