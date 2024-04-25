@@ -24,10 +24,10 @@ class AVSpeechDataset(torch.utils.data.Dataset):
                       if (os.path.isfile(os.path.join(root_dir, dir, d)) and d[-4:]=='.jpg')]
             self.all_paths.append(images)
 
-            prosidy = [os.path.join(root_dir, dir,d) for d
+            prosidy = [os.path.join(root_dir, dir, d) for d
                       in os.listdir(os.path.join(root_dir, dir)) 
-                      if (os.path.isfile(os.path.join(root_dir, dir, d)) and d[-4:]=='.npy')]
-            self.all_pros.append(prosidy)
+                      if d.endswith('_pros.npy')]
+            self.all_pros.append(prosidy[0])
 
     def __len__(self):
         return len(self.all_paths)
@@ -44,7 +44,7 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         imgs = torch.tensor(imgs)
         if self.transform is not None:
             imgs = self.transform(imgs)
-        target = torch.tensor(np.load(self.all_pros[idx][0]))
+        target = torch.tensor(np.load(self.all_pros[idx]))
         return imgs, target
 
 
