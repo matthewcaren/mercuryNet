@@ -12,21 +12,21 @@ from torch.utils.data import DataLoader
 
 
 class AVSpeechDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir, transform=None):        
+    def __init__(self, root_dir):        
         directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
-        self.transform = transform
         self.all_paths = []
         self.all_pros = []
 
         for dir in directories:
             images = [os.path.join(root_dir, dir,d) for d
                       in os.listdir(os.path.join(root_dir, dir)) 
-                      if (os.path.isfile(os.path.join(root_dir, dir, d)) and d[-4:]=='.jpg')]
+                      if d.endswith('.jpg')]
             self.all_paths.append(images)
 
             prosidy = [os.path.join(root_dir, dir, d) for d
                       in os.listdir(os.path.join(root_dir, dir)) 
                       if d.endswith('_pros.npy')]
+            
             self.all_pros.append(prosidy[0])
 
     def __len__(self):
@@ -42,8 +42,6 @@ class AVSpeechDataset(torch.utils.data.Dataset):
             imgs.append(img)
         imgs = np.asarray(imgs) / 255.
         imgs = torch.tensor(imgs)
-        if self.transform is not None:
-            imgs = self.transform(imgs)
         target = torch.tensor(np.load(self.all_pros[idx]))
         return imgs, target
 
