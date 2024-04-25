@@ -22,8 +22,8 @@ class MercuryNetLoss(nn.Module):
 
         # only care about f0 when it's voiced (so there's a valid ground truth)
         masked_f0_output = model_output[:,:,0]
-        masked_f0_output[target_voiced == 0] = 0
-        target_f0[target_voiced == 0] = 0
+        masked_f0_output[target_voiced == 0] = 1e-12
+        target_f0[target_voiced == 0] = 1e-12
 
         target_f0 = torch.log(target_f0)
         output_f0 = torch.log(masked_f0_output)
