@@ -84,8 +84,7 @@ def train(model, dataloader, optimizer, epochs):
 
 # do some training!
 model = MercuryNet()
-transform_func = transforms.Normalize(0.5, 0.5, 0.5),
-train_dataset = AVSpeechDataset('../vids_10', transform_func)
+train_dataset = AVSpeechDataset('../vids_10', None)
 dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 optim = torch.optim.Adam(model.parameters())
 
