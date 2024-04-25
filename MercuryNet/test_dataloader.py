@@ -6,4 +6,6 @@ transform_func = transforms.Normalize(0.5, 0.5, 0.5)
 
 dataset = AVSpeechDataset('./vids_10', transform_func)
 print(len(dataset))
-print(dataset.all_paths[0])
+data, target = dataset[0]
+print(data.shape)
+print(target.shape)
