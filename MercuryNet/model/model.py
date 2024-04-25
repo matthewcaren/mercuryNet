@@ -299,8 +299,8 @@ class Decoder(nn.Module):
         x = self.fc3(x)         # linear                    (time, 32)
         x = self.fc_out(x)      # linear                    (time, 3)
 
-        x[0] = torch.exp(x[0])  # make f0 log scale
-        x[2] = torch.exp(x[2])  # make loudness log scale (dB)
+        x[:,0] = torch.exp(x[:,0])  # make f0 log scale
+        x[:,2] = torch.exp(x[:,2])  # make loudness log scale (dB)
 
         return x
 
