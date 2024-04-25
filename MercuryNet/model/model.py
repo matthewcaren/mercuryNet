@@ -12,6 +12,11 @@ import numpy as np
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+# helper
+def nan_to_num(x, replacement = 0):
+    nan_mask = torch.isnan(x)
+    x[nan_mask] = replacement
+
 
 class MercuryNetLoss(nn.Module):
     def __init__(self):
@@ -25,6 +30,10 @@ class MercuryNetLoss(nn.Module):
         masked_f0_output[target_voiced == 0] = 1e-12
         target_f0[target_voiced == 0] = 1e-12
 
+        nan_to_num(target_f0, 1e-12)
+        nan_to_num(masked_f0_output, 1e-12)
+        nan_to_num(target_amp, 1e-12)
+
         target_f0 = torch.log(target_f0)
         output_f0 = torch.log(masked_f0_output)
 
@@ -36,6 +45,7 @@ class MercuryNetLoss(nn.Module):
         loss += hps.voiced_penalty * F.mse_loss(target_voiced, model_output[:,:,1])
         loss += hps.amp_penalty * F.mse_loss(target_amp, output_amp)
         return loss
+
 
 
 class Encoder(nn.Module):
