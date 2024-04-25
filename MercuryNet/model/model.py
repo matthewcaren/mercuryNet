@@ -25,11 +25,11 @@ class MercuryNetLoss(nn.Module):
         masked_f0_output[target_voiced == 0] = 0
         target_f0[target_voiced == 0] = 0
 
-        target_f0 = torch.nan_to_num(torch.log(target_f0))
-        output_f0 = torch.nan_to_num(torch.log(masked_f0_output))
+        target_f0 = torch.log(target_f0)
+        output_f0 = torch.log(masked_f0_output)
 
-        target_amp = torch.nan_to_num(torch.log(target_amp))
-        output_amp = torch.nan_to_num(torch.log(model_output[:,:,2]))
+        target_amp = torch.log(target_amp)
+        output_amp = torch.log(model_output[:,:,2])
 
         loss = 0
         loss += hps.f0_penalty * torch.nn.MSELoss(output_f0, target_f0)
