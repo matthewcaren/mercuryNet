@@ -323,7 +323,7 @@ class MercuryNet(nn.Module):
 
     def forward(self, inputs):
         vid_inputs = inputs
-        vid_lengths = vid_inputs.shape[0]
+        vid_lengths = torch.tensor(vid_inputs.shape[0])
 
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
 
