@@ -74,7 +74,7 @@ def train(model, dataloader, optimizer, epochs):
             loss.backward()
             optimizer.step()
 
-    checkpoint_path = f"../checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
+    checkpoint_path = f"./checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
     
     torch.save(
         {
