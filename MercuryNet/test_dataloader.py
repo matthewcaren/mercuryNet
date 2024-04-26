@@ -1,9 +1,8 @@
 from train_mercury import AVSpeechDataset
-from torchvision import transforms
+import time
+import torch
 
-
-dataset = AVSpeechDataset('./vids_10', 30)
-print(len(dataset))
-data, target = dataset[0]
-print(data.shape)
-print(target.shape)
+start = time.time()
+dataset = AVSpeechDataset('./vids_10', overlap=30, window_size=90)
+print(dataset[0])
+print(time.time() - start)

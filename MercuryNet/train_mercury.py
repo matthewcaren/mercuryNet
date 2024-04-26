@@ -9,16 +9,15 @@ import cv2
 import numpy as np
 from torch.utils.data import DataLoader
 
-
-
 class AVSpeechDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir, overlap):        
-        directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
+    def __init__(self, root_dir, overlap=30, window_size=90):        
         self.all_paths = []
         self.all_pros = []
         self.windows = []
         self.overlap = overlap
+        self.window_size = window_size
 
+        directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
         for dir in directories:
             images = [os.path.join(root_dir, dir,d) for d
                       in os.listdir(os.path.join(root_dir, dir)) 
@@ -26,19 +25,18 @@ class AVSpeechDataset(torch.utils.data.Dataset):
             self.all_paths.append(images)
 
         for paths in self.all_paths:
-            num_images = len(paths)
-            vid_windows = self.get_windows(num_images)
+            vid_windows = self.get_windows(len(paths))
             for window in vid_windows:
                 self.windows.append((paths, window))
 
     def get_windows(self, num_images):
-        num_windows = (num_images - 30) // 60
-        num_frames_in_window = num_windows*60 + 30
+        num_windows = (num_images - self.overlap) // (self.window_size - self.overlap)
+        num_frames_in_window = num_windows*(self.window_size - self.overlap) + self.overlap
         amount_to_chop_front = (num_images - num_frames_in_window) // 2
         windows = []
         for i in range(num_windows):
-            start = i*60 + amount_to_chop_front
-            windows.append([start, start + 90])
+            start = i*(self.window_size - self.overlap) + amount_to_chop_front
+            windows.append([start, start + self.window_size])
         return windows
 
     def __len__(self):
@@ -51,16 +49,10 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         pros_path = '_'.join(paths[0].split('_')[:-1])+'_pros.npy'
         target = np.load(pros_path)[:, window[0]:window[1]]
         target = torch.tensor(target).T.type(torch.FloatTensor)
-
-        imgs = []
         sz = (96, 96)
-        for filename in windowed_paths: 
-            img = cv2.imread(filename)
-            img = cv2.resize(img, sz)
-            imgs.append(img)
+        imgs = [cv2.resize(cv2.imread(filename), sz) for filename in windowed_paths]
         imgs = np.asarray(imgs) / 255.
         imgs = torch.tensor(imgs).permute(3,0,1,2)
-
         return imgs, target
 
 
