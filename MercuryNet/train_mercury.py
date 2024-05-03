@@ -29,6 +29,13 @@ class AVSpeechDataset(torch.utils.data.Dataset):
             vid_windows = self.get_windows(len(paths))
             for window in vid_windows:
                 self.windows.append((paths, window))
+        
+        for dir in directories:
+            frames = np.load(f'{root_dir}/{dir}/{dir}_frames.npy')
+            num_frames = frames.shape[0]
+            vid_windows = self.get_windows(num_frames)
+            for window in vid_windows:
+                self.windows.append((f'{root_dir}/{dir}/{dir}', window))
 
         self.lang_embeddings = json.load(open('lang_embeddings.json'))
 
@@ -46,17 +53,24 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         return len(self.windows)
     
     def __getitem__(self, idx):
-        paths, window = self.windows[idx]
-        paths = sorted(paths, key = lambda x: int(x.split('_')[-1].split('.')[0]))
-        windowed_paths = paths[window[0]:window[1]]
-        pros_path = '_'.join(paths[0].split('_')[:-1])+'_pros.npy'
-        metadata_path = '_'.join(paths[0].split('_')[:-1])+'_feat.json'
+        path, window = self.windows[idx]
+        pros_path = path + '_pros.npy'
+        metadata_path = path + '_feat.json'
+        frames = np.load(path + '_frames.npy')
+        windowed_frames = frames[window[0]:window[1], :, :]
+        
+        #paths = sorted(paths, key = lambda x: int(x.split('_')[-1].split('.')[0]))
+        #windowed_paths = paths[window[0]:window[1]]
+        #pros_path = '_'.join(paths[0].split('_')[:-1])+'_pros.npy'
+        #metadata_path = '_'.join(paths[0].split('_')[:-1])+'_feat.json'
         lang_embd = torch.tensor(self.lang_embeddings[json.load(open(metadata_path))['lang']])
+        
         target = np.load(pros_path)[:, window[0]:window[1]]
         target = torch.tensor(target).T.type(torch.FloatTensor)
-        sz = (96, 96)
-        imgs = [cv2.resize(cv2.imread(filename), sz) for filename in windowed_paths]
-        imgs = np.asarray(imgs) / 255.
+        
+        # sz = (96, 96)
+        #mgs = [cv2.resize(cv2.imread(filename), sz) for filename in windowed_paths]
+        imgs = windowed_frames / 255.
         imgs = torch.tensor(imgs).permute(3,0,1,2)
         return imgs, target, lang_embd
 

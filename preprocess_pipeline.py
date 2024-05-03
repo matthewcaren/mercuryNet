@@ -80,6 +80,7 @@ def process_rows(model, dataFrame):
                 head_center = np.array([row[4]*y, row[5]*x])
                 batches = [frames[i:i + batch_size] for i in range(0, len(frames), batch_size)]
                 counter, failed_detection = 0, False
+                frames = []
                 for batch in batches:
                     results = model.predict(batch, device='mps', verbose=False)
                     for result in results:
@@ -97,12 +98,15 @@ def process_rows(model, dataFrame):
                             else:
                                 failed_detection = True
                         x1, y1, x2, y2 = [round(x) for x in correct_box]
-                        cv2.imwrite(f'{vid_dir}/{vid_id}_{counter}.jpg', result.orig_img[y1:y2,x1:x2, :])
+                        frames.append(cv2.resize(result.orig_img[y1:y2,x1:x2, :], (96, 96)))
+                        #cv2.imwrite(f'{vid_dir}/{vid_id}_{counter}.jpg', )
                         counter += 1
+                np.save(f'{vid_dir}/{vid_id}_frames.npy', np.array(frames))
                 if failed_detection:
                     print("Could not confidently detect faces in all frames for", vid_dir)
                     shutil.rmtree(vid_dir)
-        except:
+        except Exception as e:
+            print(e)
             shutil.rmtree(vid_dir)
             print("Something failed for row:", row[0])
             
