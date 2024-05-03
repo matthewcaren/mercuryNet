@@ -8,6 +8,7 @@ from torchvision import transforms
 import cv2
 import numpy as np
 from torch.utils.data import DataLoader
+import json
 
 class AVSpeechDataset(torch.utils.data.Dataset):
     def __init__(self, root_dir, overlap=30, window_size=90):        
@@ -29,6 +30,8 @@ class AVSpeechDataset(torch.utils.data.Dataset):
             for window in vid_windows:
                 self.windows.append((paths, window))
 
+        self.lang_embeddings = json.load(open('lang_embeddings.json'))
+
     def get_windows(self, num_images):
         num_windows = (num_images - self.overlap) // (self.window_size - self.overlap)
         num_frames_in_window = num_windows*(self.window_size - self.overlap) + self.overlap
@@ -47,13 +50,16 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         paths = sorted(paths, key = lambda x: int(x.split('_')[-1].split('.')[0]))
         windowed_paths = paths[window[0]:window[1]]
         pros_path = '_'.join(paths[0].split('_')[:-1])+'_pros.npy'
+        metadata_path = '_'.join(paths[0].split('_')[:-1])+'_feat.json'
+        lang_embd = torch.tensor(self.lang_embeddings[json.load(open(metadata_path))['lang']])
+        print(lang_embd.shape)
         target = np.load(pros_path)[:, window[0]:window[1]]
         target = torch.tensor(target).T.type(torch.FloatTensor)
         sz = (96, 96)
         imgs = [cv2.resize(cv2.imread(filename), sz) for filename in windowed_paths]
         imgs = np.asarray(imgs) / 255.
         imgs = torch.tensor(imgs).permute(3,0,1,2)
-        return imgs, target
+        return imgs, target, lang_embd
 
 
 def train(model, dataloader, optimizer, epochs):
@@ -67,16 +73,17 @@ def train(model, dataloader, optimizer, epochs):
     train_loss = []
 
     loss_func = MercuryNetLoss()
-    batches = tqdm(enumerate(dataloader), total=len(dataloader))
     
     for epoch in range(epochs):
+        batches = tqdm(enumerate(dataloader), total=len(dataloader))
         print("starting epoch", epoch)
-        for batch_idx, (data, target) in batches:
+        for batch_idx, (data, target, lang_embd) in batches:
             data_mps = data.to(device)
             target_mps = target.to(device)
+            lang_embd_mps = lang_embd.to(device)
             optimizer.zero_grad()
 
-            output = model(data_mps)
+            output = model(data_mps, lang_embd_mps)
 
             loss = loss_func(output, target_mps)
             

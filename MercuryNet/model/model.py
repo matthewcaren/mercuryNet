@@ -330,8 +330,7 @@ class MercuryNet(nn.Module):
         self.encoder = Encoder3D(hps).to(device)
         self.decoder = Decoder().to(device)
 
-    def forward(self, inputs):
-        vid_inputs = inputs
+    def forward(self, vid_inputs, lang_embds):
         vid_lengths = torch.tensor(vid_inputs.shape[0])
 
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
@@ -339,6 +338,7 @@ class MercuryNet(nn.Module):
         encoder_outputs = self.encoder(
             embedded_inputs.to(device), vid_lengths.to(device)
         )
+        ## Add embeddings
 
         decoder_output = self.decoder(encoder_outputs)
         return decoder_output
