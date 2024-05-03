@@ -255,7 +255,7 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
 
         self.fc1 = torch.nn.Sequential(
-            torch.nn.Linear(384, 512),
+            torch.nn.Linear(437, 512),
             torch.nn.ReLU(),
             torch.nn.Linear(512, 512),
             torch.nn.ReLU()
@@ -348,9 +348,11 @@ class MercuryNet(nn.Module):
         encoder_outputs = self.encoder(
             embedded_inputs.to(device), vid_lengths.to(device)
         )
-        ## Add embeddings
-
-        decoder_output = self.decoder(encoder_outputs)
+        
+        lang_embds = lang_embds.type(torch.FloatTensor).to(device)
+        lang_embds = lang_embds.repeat(encoder_outputs.shape[:2] + (1,))
+        decoder_input = torch.cat((encoder_outputs, lang_embds), dim=2)    
+        decoder_output = self.decoder(decoder_input)
         return decoder_output
     
 

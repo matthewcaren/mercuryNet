@@ -52,7 +52,6 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         pros_path = '_'.join(paths[0].split('_')[:-1])+'_pros.npy'
         metadata_path = '_'.join(paths[0].split('_')[:-1])+'_feat.json'
         lang_embd = torch.tensor(self.lang_embeddings[json.load(open(metadata_path))['lang']])
-        print(lang_embd.shape)
         target = np.load(pros_path)[:, window[0]:window[1]]
         target = torch.tensor(target).T.type(torch.FloatTensor)
         sz = (96, 96)
@@ -76,7 +75,7 @@ def train(model, dataloader, optimizer, epochs):
     
     for epoch in range(epochs):
         batches = tqdm(enumerate(dataloader), total=len(dataloader))
-        print("starting epoch", epoch)
+        print("\nstarting epoch", epoch)
         for batch_idx, (data, target, lang_embd) in batches:
             data_mps = data.to(device)
             target_mps = target.to(device)
@@ -90,9 +89,9 @@ def train(model, dataloader, optimizer, epochs):
             loss.backward()
             optimizer.step()
 
-            print("loss:", loss)
+        print("loss:", loss)
 
-    checkpoint_path = f"./checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
+    checkpoint_path = f"checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
     
     torch.save(
         {
@@ -106,10 +105,10 @@ def train(model, dataloader, optimizer, epochs):
     return train_loss
 
 
-# # do some training!
-# model = MercuryNet()
-# train_dataset = AVSpeechDataset('../vids_10')
-# dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-# optim = torch.optim.Adam(model.parameters())
+# do some training!
+model = MercuryNet()
+train_dataset = AVSpeechDataset('./vids_10')
+dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+optim = torch.optim.Adam(model.parameters())
 
-# train(model, dataloader, optim, 4)
+train(model, dataloader, optim, 5)
