@@ -28,11 +28,11 @@ class MercuryNetLoss(nn.Module):
 
     def forward(self, model_output, targets):
         target_f0, target_voiced, target_amp = targets[:,:,0], targets[:,:,1], targets[:,:,2]
-        
+                
         # equalize baselines (only measure relative f0 change) - using large number as "zero" to avoid negative log
         first_voiced_idx = torch.min(torch.where(target_voiced == 1)[1])
-        target_f0 += 10000 - target_f0[:, first_voiced_idx]   
-        output_f0 = model_output[:,:,0] + (10000 - model_output[:, first_voiced_idx, 0])
+        target_f0 += 10000 - target_f0[:,first_voiced_idx].unsqueeze(1)
+        output_f0 = model_output[:,:,0] + (10000 - model_output[:,first_voiced_idx, 0].unsqueeze(1))
         
         # only care about f0 when it's voiced (so there's a valid ground truth)
         masked_f0_output = output_f0.clone()
@@ -348,9 +348,10 @@ class MercuryNet(nn.Module):
         encoder_outputs = self.encoder(
             embedded_inputs.to(device), vid_lengths.to(device)
         )
-        
+                
         lang_embds = lang_embds.type(torch.FloatTensor).to(device)
-        lang_embds = lang_embds.repeat(encoder_outputs.shape[:2] + (1,))
+        lang_embds = lang_embds.unsqueeze(1).repeat((1, encoder_outputs.shape[1], 1))
+                
         decoder_input = torch.cat((encoder_outputs, lang_embds), dim=2)    
         decoder_output = self.decoder(decoder_input)
         return decoder_output
