@@ -18,25 +18,34 @@ def nan_to_num(x, replacement = 0):
     x[nan_mask] = replacement
 
 
+def count_nan(a):
+    return torch.nonzero(torch.isnan(a.view(-1))).shape
+
+
 class MercuryNetLoss(nn.Module):
     def __init__(self):
         super(MercuryNetLoss, self).__init__()
 
     def forward(self, model_output, targets):
         target_f0, target_voiced, target_amp = targets[:,:,0], targets[:,:,1], targets[:,:,2]
-
+        
+        # equalize baselines (only measure relative f0 change) - using large number as "zero" to avoid negative log
+        first_voiced_idx = torch.min(torch.where(target_voiced == 1)[1])
+        target_f0 += 10000 - target_f0[:, first_voiced_idx]   
+        output_f0 = model_output[:,:,0] + (10000 - model_output[:, first_voiced_idx, 0])
+        
         # only care about f0 when it's voiced (so there's a valid ground truth)
-        masked_f0_output = model_output[:,:,0]
+        masked_f0_output = output_f0.clone()
         masked_f0_output[target_voiced == 0] = 1e-12
         target_f0[target_voiced == 0] = 1e-12
 
         nan_to_num(target_f0, 1e-12)
         nan_to_num(masked_f0_output, 1e-12)
         nan_to_num(target_amp, 1e-12)
-
+                    
         target_f0 = torch.log(target_f0)
         output_f0 = torch.log(masked_f0_output)
-
+                         
         target_amp = torch.log(target_amp)
         output_amp = torch.log(model_output[:,:,2])
 
@@ -225,10 +234,10 @@ class Encoder3D(nn.Module):
 
         # [bs x 90 x encoder_embedding_dim]
         x = (x.permute(0, 2, 1, 3, 4).squeeze(4).squeeze(3).contiguous())
-
+        
         # pytorch tensor are not reversible, hence the conversion
         input_lengths = input_lengths.cpu().numpy()
-        outputs, _ = self.lstm(x)
+        outputs, _ = self.lstm(x)              
         return outputs
 
     def inference(self, x):
@@ -307,11 +316,12 @@ class Decoder(nn.Module):
 
         x = self.fc3(x)         # linear                    (time, 32)
         x = self.fc_out(x)      # linear                    (time, 3)
-
-        # x[:,0] = torch.exp(x[:,0])  # make f0 log scale
-        # x[:,2] = torch.exp(x[:,2])  # make loudness log scale (dB)
-
-        return x
+        
+        softplus_f0 = F.softplus(x[:,:,0])
+        softplus_amp = F.softplus(x[:,:,2])
+        voiced_flag = x[:,:,1]
+        
+        return torch.stack((softplus_f0, voiced_flag, softplus_amp), dim=2)
 
 
 def is_end_of_frames(output, eps=0.2):
