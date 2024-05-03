@@ -17,6 +17,7 @@ def nan_to_num(x, replacement = 0):
     nan_mask = torch.isnan(x)
     x[nan_mask] = replacement
 
+
 def count_nan(a):
     return torch.nonzero(torch.isnan(a.view(-1))).shape
 
@@ -28,8 +29,13 @@ class MercuryNetLoss(nn.Module):
     def forward(self, model_output, targets):
         target_f0, target_voiced, target_amp = targets[:,:,0], targets[:,:,1], targets[:,:,2]
         
+        # equalize baselines (only measure relative f0 change) - using large number as "zero" to avoid negative log
+        first_voiced_idx = torch.min(torch.where(target_voiced == 1)[1])
+        target_f0 += 10000 - target_f0[:, first_voiced_idx]   
+        output_f0 = model_output[:,:,0] + (10000 - model_output[:, first_voiced_idx, 0])
+        
         # only care about f0 when it's voiced (so there's a valid ground truth)
-        masked_f0_output = model_output[:,:,0]
+        masked_f0_output = output_f0.clone()
         masked_f0_output[target_voiced == 0] = 1e-12
         target_f0[target_voiced == 0] = 1e-12
 
@@ -344,7 +350,7 @@ class MercuryNet(nn.Module):
             embedded_inputs.to(device), vid_lengths.to(device)
         )
 
-        decoder_output = self.decoder(encoder_outputs)     
+        decoder_output = self.decoder(encoder_outputs)
         return decoder_output
     
 
