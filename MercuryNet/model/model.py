@@ -348,7 +348,8 @@ class MercuryNet(nn.Module):
         encoder_outputs = self.encoder(
             embedded_inputs.to(device), vid_lengths.to(device)
         )
-        ## Add embeddings
+        lang_embds.repeat(encoder_outputs.shape[:2] + [1])
+        decoder_input = torch.cat(encoder_outputs, lang_embds, dim=2)
 
         decoder_output = self.decoder(encoder_outputs)
         return decoder_output
