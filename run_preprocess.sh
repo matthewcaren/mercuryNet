@@ -1,8 +1,8 @@
 # !/bin/bash
 start=`date +%s`
 rows_per_iter=10
-start_point=16500
-number_iters=10
+start_point=21100
+number_iters=510
 for ((j=start_point; j < (start_point+rows_per_iter*number_iters); j=j+rows_per_iter))
 do 
     python preprocess_pipeline.py -c $rows_per_iter -s $j

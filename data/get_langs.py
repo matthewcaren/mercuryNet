@@ -15,6 +15,9 @@ for row in data.iterrows():
     except:
         pass
         #print("Not available")
-    langs.append(lang)
+    if lang is not None:
+        langs.append(lang)
+    else:
+        langs.append('nolang')
 data.insert(len(data.columns), 'Language', langs)
 data.to_csv("avspeech_test_langs.csv")

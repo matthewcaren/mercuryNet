@@ -10,11 +10,16 @@ from ultralytics import YOLO
 import librosa
 import shutil 
 import argparse
+from deepface import DeepFace
 
 AUDIO_SR = 22050
 VID_FRAME_RATE = 30
 HOP_SIZE = AUDIO_SR // VID_FRAME_RATE
 assert((22050/VID_FRAME_RATE) % 1 == 0)
+
+def get_center(region):
+    return int(region['x'] + 0.5*region['w']), int(region['y'] + 0.5*region['h'])
+
 
 def extract_features(wav_path):
     '''
@@ -39,10 +44,13 @@ def extract_features(wav_path):
 
 def process_rows(model, dataFrame):
     batch_size = 32
-    output_dir = './vids'
+    output_dir = './vids_2'
+    DIST_THRESH = 20
+    DIST_COEF = 3
     for row in dataFrame:
         # Download video and make directories
         try:
+
             vid_id = f"{row[1]}_{str(row[2])}"
             vid_dir = os.path.join(output_dir, vid_id)
             if not os.path.exists(vid_dir):
@@ -58,26 +66,41 @@ def process_rows(model, dataFrame):
                 # Extract audio and facial features (nill for now)
                 if not os.path.exists(wav_path):
                     subprocess.run(['ffmpeg', '-i', vid_path, '-ac', '1',  wav_path,'-loglevel', 'warning'])
-                facial_attributes = {'race': 0, 'gender': 0, 'emotion': 0, 'age': 0, 'lang': row[6]}
-                json.dump(facial_attributes, open(f'{vid_dir}/{vid_id}_feat.json', 'w'))
+                
                 
                 # Extract frames from video
                 frames = []
                 video_stream = cv2.VideoCapture(vid_path)
+
                 while True:
                     still_reading, frame = video_stream.read()
+                    [x, y, _] = frame.shape
+                    head_center = np.array([row[4]*y, row[5]*x])
                     if not still_reading:
                         video_stream.release()
                         break
+                    objs = DeepFace.analyze(img_path = frame, 
+                        detector_backend='yolov8',
+                        actions = ['age', 'gender', 'race', 'emotion'],
+                        silent=True)
+                    centers = [np.array(get_center(obj['region'])) for obj in objs]
+                    dists = [np.linalg.norm(center - head_center) for center in centers]
+                    if (min(dists) < DIST_THRESH): 
+                        if (len(dists) == 1) or (dists[np.argsort(dists)[1]] > DIST_COEF*min(dists)):
+                            correct_box = objs[np.argmin(dists)]
+                            break
                     frames.append(frame)
-                [x, y, _] = frames[0].shape
+                video_stream.release()
+                cv2.destroyAllWindows()
+                facial_attributes = {'race': correct_box['race'], 'gender': correct_box['gender'], 'emotion': correct_box['emotion'], 'age': correct_box['age'], 'lang': row[6]}
+                json.dump(facial_attributes, open(f'{vid_dir}/{vid_id}_feat.json', 'w'))
 
                 # Make ground truth data, only take as many frames as we have
                 ground_truth = extract_features(wav_path)[:, :len(frames)]
                 np.save(f'{vid_dir}/{vid_id}_pros.npy', ground_truth)
 
                 # Run YOLO on all frames
-                head_center = np.array([row[4]*y, row[5]*x])
+                
                 batches = [frames[i:i + batch_size] for i in range(0, len(frames), batch_size)]
                 counter, failed_detection = 0, False
                 frames = []
@@ -93,7 +116,7 @@ def process_rows(model, dataFrame):
                             # Ensure center of frame is close enough to annotated person
                             centers = [np.array([0.5*(box[2] + box[0]), 0.5*(box[3] + box[1])]) for box in boxes]
                             dists = [np.linalg.norm(center - head_center) for center in centers]
-                            if (min(dists) < 20) or (dists[np.argsort(dists)[1]] > 3*min(dists)):
+                            if (min(dists) < DIST_THRESH) or (dists[np.argsort(dists)[1]] > DIST_COEF*min(dists)):
                                 correct_box = boxes[np.argmin(dists)]
                             else:
                                 failed_detection = True

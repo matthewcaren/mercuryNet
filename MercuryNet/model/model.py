@@ -255,7 +255,7 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
 
         self.fc1 = torch.nn.Sequential(
-            torch.nn.Linear(437, 512),
+            torch.nn.Linear(438, 512),
             torch.nn.ReLU(),
             torch.nn.Linear(512, 512),
             torch.nn.ReLU()
