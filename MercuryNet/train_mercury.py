@@ -81,7 +81,6 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
         device = torch.device("mps")
 
     loss_func = MercuryNetLoss()
-    train_losses, val_losses = [], []
 
     for epoch in range(epochs):
         print("\nstarting epoch", epoch)
@@ -100,7 +99,6 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
             train_loss = loss_func(output, target_mps)
 
             train_loss.backward()
-            train_losses.append(train_loss)
             optimizer.step()
         print("Train loss:", train_loss)
         model.eval()
@@ -112,7 +110,6 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
 
             output = model(data_mps, metadata_embd_mps)
             val_loss = loss_func(output, target_mps)
-            val_losses.append(val_loss)
         print("val loss:", val_loss)
 
     checkpoint_path = f"./MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
@@ -125,11 +122,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
         },
         checkpoint_path,
     )
-    np.save(f"./MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}_losses.npy", np.array([train_losses, val_losses]))
-
-
-    return train_losses, val_losses
-
+    #np.save(f"./MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}_losses.npy", np.array([train_losses, val_losses]))
 
 
 def test(model, test_dataloader):
@@ -150,7 +143,7 @@ def test(model, test_dataloader):
         output = model(data_mps, metadata_embd_mps)
         test_loss = loss_func(output, target_mps)
 
-    print("Test loss:", test_loss)
+    print("test loss:", test_loss)
 
 def segment_data(root_dir, desired_datause):
     all_directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
