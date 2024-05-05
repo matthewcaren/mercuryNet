@@ -159,7 +159,7 @@ def segment_data(root_dir, desired_datause):
 
 def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
     model = MercuryNet()
-    
+
     encoder = Encoder()
     decoder= Decoder()
     encoder_params = filter(lambda p: p.requires_grad, encoder.parameters())
@@ -167,7 +167,7 @@ def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
     print("total trainable encoder weights:", encoder_params)
     decoder_params = filter(lambda p: p.requires_grad, decoder.parameters())
     decoder_params = sum([np.prod(p.size()) for p in decoder_params])
-    print("total trainable encoder weights:", decoder_params)
+    print("total trainable decoder weights:", decoder_params)
 
 
     train_data, val_data, test_data = segment_data(root_dir, data_count)
@@ -185,4 +185,4 @@ def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
 
 
 
-run_training_pass('vids_2', batch_size=8, epochs=16)
+run_training_pass('/nobackup/users/jrajagop/vids', batch_size=8, epochs=4)
