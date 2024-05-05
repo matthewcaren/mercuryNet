@@ -255,15 +255,15 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
 
         self.fc1 = torch.nn.Sequential(
-            torch.nn.Linear(438, 512),
+            torch.nn.Linear(447, 1024),
             torch.nn.ReLU(),
-            torch.nn.Linear(512, 512),
+            torch.nn.Linear(1024, 1024),
             torch.nn.ReLU()
         )
 
         self.conv1 = torch.nn.Sequential(
             # depth-wise conv to expand channel space
-            ConvNorm(in_channels=512, out_channels=512, kernel_size=5),
+            ConvNorm(in_channels=1024, out_channels=1024, kernel_size=5),
             torch.nn.ReLU(),
             ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
@@ -340,7 +340,7 @@ class MercuryNet(nn.Module):
         self.encoder = Encoder3D(hps).to(device)
         self.decoder = Decoder().to(device)
 
-    def forward(self, vid_inputs, lang_embds):
+    def forward(self, vid_inputs, metadata_embd):
         vid_lengths = torch.tensor(vid_inputs.shape[0])
 
         embedded_inputs = vid_inputs.type(torch.FloatTensor)
@@ -349,10 +349,10 @@ class MercuryNet(nn.Module):
             embedded_inputs.to(device), vid_lengths.to(device)
         )
                 
-        lang_embds = lang_embds.type(torch.FloatTensor).to(device)
-        lang_embds = lang_embds.unsqueeze(1).repeat((1, encoder_outputs.shape[1], 1))
+        metadata_embd = metadata_embd.type(torch.FloatTensor).to(device)
+        metadata_embd = metadata_embd.unsqueeze(1).repeat((1, encoder_outputs.shape[1], 1))
                 
-        decoder_input = torch.cat((encoder_outputs, lang_embds), dim=2)    
+        decoder_input = torch.cat((encoder_outputs, metadata_embd), dim=2)    
         decoder_output = self.decoder(decoder_input)
         return decoder_output
     

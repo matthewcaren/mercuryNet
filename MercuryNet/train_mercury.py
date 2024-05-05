@@ -1,24 +1,20 @@
 import torch
 from model.model import MercuryNet, MercuryNetLoss
 from tqdm import tqdm
-import torch.nn.functional as F
 from datetime import datetime
 import os
-from torchvision import transforms
-import cv2
 import numpy as np
 from torch.utils.data import DataLoader
 import json
 
 class AVSpeechDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir, overlap=30, window_size=90):        
+    def __init__(self, root_dir, directories, overlap=30, window_size=90):        
         self.all_paths = []
         self.all_pros = []
         self.windows = []
         self.overlap = overlap
         self.window_size = window_size
 
-        directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
         for dir in directories:
             images = [os.path.join(root_dir, dir,d) for d
                       in os.listdir(os.path.join(root_dir, dir)) 
@@ -31,11 +27,11 @@ class AVSpeechDataset(torch.utils.data.Dataset):
                 self.windows.append((paths, window))
         
         for dir in directories:
-            frames = np.load(f'{root_dir}/{dir}/{dir}_frames.npy')
+            frames = np.load(f'./{root_dir}/{dir}/{dir}_frames.npy')
             num_frames = frames.shape[0]
             vid_windows = self.get_windows(num_frames)
             for window in vid_windows:
-                self.windows.append((f'{root_dir}/{dir}/{dir}', window))
+                self.windows.append((f'./{root_dir}/{dir}/{dir}', window))
 
         self.lang_embeddings = json.load(open('lang_embeddings.json'))
 
@@ -63,49 +59,67 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         #windowed_paths = paths[window[0]:window[1]]
         #pros_path = '_'.join(paths[0].split('_')[:-1])+'_pros.npy'
         #metadata_path = '_'.join(paths[0].split('_')[:-1])+'_feat.json'
-        lang_embd = torch.tensor(self.lang_embeddings[json.load(open(metadata_path))['lang']])
-        
+        json_data = json.load(open(metadata_path))
+        metadata_embd = self.lang_embeddings[json_data['lang']]
+        age = json_data['age']/80
+        gender = [json_data['gender']['Woman']/100, json_data['gender']['Man']/100]
+        race = [json_data['race'][r]/100 for r in ("asian", "indian", "black", "white", "middle eastern", "latino hispanic")]
+        metadata_embd.append(age)
+        metadata_embd.extend(gender)
+        metadata_embd.extend(race)
+        metadata_embd = torch.tensor(metadata_embd)
+
         target = np.load(pros_path)[:, window[0]:window[1]]
         target = torch.tensor(target).T.type(torch.FloatTensor)
         
-        # sz = (96, 96)
-        #mgs = [cv2.resize(cv2.imread(filename), sz) for filename in windowed_paths]
         imgs = windowed_frames / 255.
         imgs = torch.tensor(imgs).permute(3,0,1,2)
-        return imgs, target, lang_embd
+        return imgs, target, metadata_embd
 
 
-def train(model, dataloader, optimizer, epochs):
+def train(model, train_dataloader, val_dataloader, optimizer, epochs):
     device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
 
-    model.train()
-    train_loss = []
-
     loss_func = MercuryNetLoss()
-    
+    train_losses, val_losses = [], []
+
     for epoch in range(epochs):
-        batches = tqdm(enumerate(dataloader), total=len(dataloader))
         print("\nstarting epoch", epoch)
-        for batch_idx, (data, target, lang_embd) in batches:
+        train_batches = tqdm(enumerate(train_dataloader), total=len(train_dataloader))
+        val_batches = enumerate(val_dataloader)
+        model.train()
+        for batch_idx, (data, target, metadata_embd) in train_batches:
+            
             data_mps = data.to(device)
             target_mps = target.to(device)
-            lang_embd_mps = lang_embd.to(device)
+            metadata_embd_mps = metadata_embd.to(device)
             optimizer.zero_grad()
 
-            output = model(data_mps, lang_embd_mps)
+            output = model(data_mps, metadata_embd_mps)
 
-            loss = loss_func(output, target_mps)
-            
-            loss.backward()
+            train_loss = loss_func(output, target_mps)
+
+            train_loss.backward()
+            train_losses.append(train_loss)
             optimizer.step()
+        print("Train loss:", train_loss)
+        model.eval()
 
-        print("loss:", loss)
+        for batch_idx, (data, target, metadata_embd) in val_batches:
+            data_mps = data.to(device)
+            target_mps = target.to(device)
+            metadata_embd_mps = metadata_embd.to(device)
 
-    checkpoint_path = f"checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
+            output = model(data_mps, metadata_embd_mps)
+            val_loss = loss_func(output, target_mps)
+            val_losses.append(val_loss)
+        print("val loss:", val_loss)
+
+    checkpoint_path = f"./MercuryNet/model/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
     
     torch.save(
         {
@@ -115,14 +129,61 @@ def train(model, dataloader, optimizer, epochs):
         },
         checkpoint_path,
     )
+    np.save(f"./MercuryNet/model/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}_losses.npy", np.array([train_losses, val_losses]))
 
-    return train_loss
+
+    return train_losses, val_losses
 
 
-# do some training!
-model = MercuryNet()
-train_dataset = AVSpeechDataset('./vids_10')
-dataloader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-optim = torch.optim.Adam(model.parameters())
 
-train(model, dataloader, optim, 8)
+def test(model, test_dataloader):
+    device = torch.device("cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+
+    loss_func = MercuryNetLoss()
+
+    test_batches = enumerate(test_dataloader)
+    for batch_idx, (data, target, metadata_embd) in test_batches:
+        data_mps = data.to(device)
+        target_mps = target.to(device)
+        metadata_embd_mps = metadata_embd.to(device)
+
+        output = model(data_mps, metadata_embd_mps)
+        test_loss = loss_func(output, target_mps)
+
+    print("Test loss:", test_loss)
+
+def segment_data(root_dir, desired_datause):
+    all_directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
+    actual_datacount = min(all_directories, desired_datause)
+    train_count = int(actual_datacount*0.7)
+    val_count = int(actual_datacount*0.15)
+    test_count = int(actual_datacount*0.15)
+    total_count = train_count + val_count + test_count
+    all_data = np.random.choice(all_directories, total_count, replace=False)
+    train_data = all_data[:train_count]
+    val_data = all_data[train_count:train_count+val_count]
+    test_data = all_data[train_count+val_count:]
+    return train_data, val_data, test_data
+
+def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
+    model = MercuryNet()
+
+    train_data, val_data, test_data = segment_data(root_dir, data_count)
+    train_dataset = AVSpeechDataset(root_dir, train_data)
+    val_dataset = AVSpeechDataset(root_dir, val_data)
+    test_dataset = AVSpeechDataset(root_dir, test_data)
+    
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
+    optim = torch.optim.Adam(model.parameters())
+    train(model, train_dataloader, val_dataloader, optim, epochs=epochs)
+    test(model, test_dataloader)
+
+run_training_pass('./vids_25')
+
