@@ -33,7 +33,7 @@ class AVSpeechDataset(torch.utils.data.Dataset):
             for window in vid_windows:
                 self.windows.append((f'{root_dir}/{vid_dir}/{vid_dir}', window))
 
-        self.lang_embeddings = json.load(open('lang_embeddings.json'))
+        self.lang_embeddings = json.load(open('data/lang_embeddings.json'))
 
     def get_windows(self, num_images):
         num_windows = (num_images - self.overlap) // (self.window_size - self.overlap)

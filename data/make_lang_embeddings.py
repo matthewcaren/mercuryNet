@@ -14,4 +14,4 @@ for lang in all_langs:
             scores.append(lc.tag_distance(lang, other_lang))
     scores = [s/134 for s in scores]
     lang_data[lang] = scores
-json.dump(lang_data, open('lang_embeddings.json', 'w'))
+json.dump(lang_data, open('data/lang_embeddings.json', 'w'))

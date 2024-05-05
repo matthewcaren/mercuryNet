@@ -18,7 +18,7 @@ for vid_dir in tqdm(os.listdir(root_dir)):
                
         path = f'{root_dir}/{vid_dir}/{vid_dir}'
         json_data = json.load(open(path + '_feat.json'))
-        if json_data['race'] == 0 or len(json_data['race']) != 6 or len(json_data['gender']) != 2:
+        if json_data['race'] == 0 or len(json_data['race']) != 6 or len(json_data['gender']) != 2 or type(json_data['lang']) != str:
             failed = True
             json_fail = True
             print('Oh no json')
@@ -43,23 +43,22 @@ for vid_dir in tqdm(os.listdir(root_dir)):
             print(pros.shape[1] - frames.shape[0])
             
 
-        fpath = f'./{root_dir}/{vid_dir}/{vid_dir}.mp4'
-        cap = cv2.VideoCapture(fpath)
-        frame_counter = 0
-        while(cap.isOpened()): 
-            ret, frame = cap.read() 
-            if ret == True:
-                frame_counter += 1
-            else:
-                break
-        cap.release() 
-        cv2.destroyAllWindows() 
-        if frame_counter != frames.shape[0]:
-            print("Frame lenght mismatch")
-            print(frame_counter, frames.shape[0], vid_dir)
+        # fpath = f'./{root_dir}/{vid_dir}/{vid_dir}.mp4'
+        # cap = cv2.VideoCapture(fpath)
+        # frame_counter = 0
+        # while(cap.isOpened()): 
+        #     ret, frame = cap.read() 
+        #     if ret == True:
+        #         frame_counter += 1
+        #     else:
+        #         break
+        # cap.release() 
+        # cv2.destroyAllWindows() 
+        # if frame_counter != frames.shape[0]:
+        #     print("Frame lenght mismatch")
+        #     print(frame_counter, frames.shape[0], vid_dir)
         if failed:
             still_to_go.append(vid_dir)
 
 print(len(still_to_go))
-json.dump(still_to_go, open('still_to_go.json', 'w'))
 
