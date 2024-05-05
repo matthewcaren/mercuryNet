@@ -15,9 +15,9 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         self.overlap = overlap
         self.window_size = window_size
 
-        for dir in directories:
-            images = [os.path.join(root_dir, dir,d) for d
-                      in os.listdir(os.path.join(root_dir, dir)) 
+        for vid_dir in directories:
+            images = [os.path.join(root_dir, vid_dir,d) for d
+                      in os.listdir(os.path.join(root_dir, vid_dir)) 
                       if d.endswith('.jpg')]
             self.all_paths.append(images)
 
@@ -26,12 +26,12 @@ class AVSpeechDataset(torch.utils.data.Dataset):
             for window in vid_windows:
                 self.windows.append((paths, window))
         
-        for dir in directories:
-            frames = np.load(f'./{root_dir}/{dir}/{dir}_frames.npy')
+        for vid_dir in directories:
+            frames = np.load(f'{root_dir}/{vid_dir}/{vid_dir}_frames.npy')
             num_frames = frames.shape[0]
             vid_windows = self.get_windows(num_frames)
             for window in vid_windows:
-                self.windows.append((f'./{root_dir}/{dir}/{dir}', window))
+                self.windows.append((f'{root_dir}/{vid_dir}/{vid_dir}', window))
 
         self.lang_embeddings = json.load(open('lang_embeddings.json'))
 
@@ -112,7 +112,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
             val_loss = loss_func(output, target_mps)
         print("val loss:", val_loss)
 
-    checkpoint_path = f"./MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
+    checkpoint_path = f"/MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
     
     torch.save(
         {
@@ -122,7 +122,6 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
         },
         checkpoint_path,
     )
-    #np.save(f"./MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}_losses.npy", np.array([train_losses, val_losses]))
 
 
 def test(model, test_dataloader):
@@ -146,7 +145,7 @@ def test(model, test_dataloader):
     print("test loss:", test_loss)
 
 def segment_data(root_dir, desired_datause):
-    all_directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
+    all_directories = [vid_dir for vid_dir in os.listdir(root_dir) if vid_dir[0] != '.']
     actual_datacount = min(len(all_directories), desired_datause)
     train_count = int(actual_datacount*0.7)
     val_count = int(actual_datacount*0.15)
@@ -176,4 +175,4 @@ def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
 
 
 
-run_training_pass('./vids_2', batch_size=8, epochs=16)
+run_training_pass('vids_2', batch_size=8, epochs=16)

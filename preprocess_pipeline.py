@@ -44,7 +44,7 @@ def extract_features(wav_path):
 
 def process_rows(model, dataFrame):
     batch_size = 32
-    output_dir = './vids_2'
+    output_dir = 'vids_2'
     DIST_THRESH = 20
     DIST_COEF = 3
     for row in dataFrame:
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     start = int(args.start)
     count = int(args.count)
     start_time = time.time()
-    raw_data = pd.read_csv('./data/avspeech_test_langs.csv')
+    raw_data = pd.read_csv('data/avspeech_test_langs.csv')
     dataFrame = np.array(raw_data)[start:start+count]
     model = YOLO('yolov8m-face.pt')
     process_rows(model, dataFrame)

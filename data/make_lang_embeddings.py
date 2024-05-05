@@ -2,7 +2,7 @@ import json
 import langcodes as lc
 import pandas as pd
 
-all_langs = list(set(pd.read_csv('./data/avspeech_test_langs.csv')['Language']))
+all_langs = list(set(pd.read_csv('/data/avspeech_test_langs.csv')['Language']))
 all_langs = [x for x in all_langs if type(x) == str]
 lang_data = {}
 for lang in all_langs:
