@@ -174,5 +174,6 @@ def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
     train(model, train_dataloader, val_dataloader, optim, epochs=epochs)
     test(model, test_dataloader)
 
-run_training_pass('./vids_25')
 
+
+run_training_pass('./vids_2', batch_size=8, epochs=16)
