@@ -265,7 +265,7 @@ class Decoder(nn.Module):
             # depth-wise conv to expand channel space
             ConvNorm(in_channels=1024, out_channels=1024, kernel_size=5),
             torch.nn.ReLU(),
-            ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
+            ConvNorm(in_channels=1024, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),

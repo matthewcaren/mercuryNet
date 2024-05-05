@@ -2,7 +2,7 @@
 start=`date +%s`
 rows_per_iter=10
 start_point=17000
-number_iters=500
+number_iters=5
 for ((j=start_point; j < (start_point+rows_per_iter*number_iters); j=j+rows_per_iter))
 do 
     python preprocess_pipeline.py -c $rows_per_iter -s $j

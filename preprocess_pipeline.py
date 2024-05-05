@@ -71,25 +71,29 @@ def process_rows(model, dataFrame):
                 # Extract frames from video
                 frames = []
                 video_stream = cv2.VideoCapture(vid_path)
-
+                found_correct_box = False
                 while True:
                     still_reading, frame = video_stream.read()
-                    [x, y, _] = frame.shape
-                    head_center = np.array([row[4]*y, row[5]*x])
+                    
+                    
                     if not still_reading:
                         video_stream.release()
                         break
-                    objs = DeepFace.analyze(img_path = frame, 
-                        detector_backend='yolov8',
-                        actions = ['age', 'gender', 'race', 'emotion'],
-                        silent=True)
-                    centers = [np.array(get_center(obj['region'])) for obj in objs]
-                    dists = [np.linalg.norm(center - head_center) for center in centers]
-                    if (min(dists) < DIST_THRESH): 
-                        if (len(dists) == 1) or (dists[np.argsort(dists)[1]] > DIST_COEF*min(dists)):
-                            correct_box = objs[np.argmin(dists)]
-                            break
                     frames.append(frame)
+                    
+                    [x, y, _] = frame.shape
+                    head_center = np.array([row[4]*y, row[5]*x])
+                    if not found_correct_box:
+                        objs = DeepFace.analyze(img_path = frame, 
+                            detector_backend='yolov8',
+                            actions = ['age', 'gender', 'race', 'emotion'],
+                            silent=True)
+                        centers = [np.array(get_center(obj['region'])) for obj in objs]
+                        dists = [np.linalg.norm(center - head_center) for center in centers]
+                        if (min(dists) < DIST_THRESH): 
+                            if (len(dists) == 1) or (dists[np.argsort(dists)[1]] > DIST_COEF*min(dists)):
+                                correct_box = objs[np.argmin(dists)]
+                                found_correct_box = True
                 video_stream.release()
                 cv2.destroyAllWindows()
                 facial_attributes = {'race': correct_box['race'], 'gender': correct_box['gender'], 'emotion': correct_box['emotion'], 'age': correct_box['age'], 'lang': row[6]}

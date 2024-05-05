@@ -55,12 +55,8 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         frames = np.load(path + '_frames.npy')
         windowed_frames = frames[window[0]:window[1], :, :]
         
-        #paths = sorted(paths, key = lambda x: int(x.split('_')[-1].split('.')[0]))
-        #windowed_paths = paths[window[0]:window[1]]
-        #pros_path = '_'.join(paths[0].split('_')[:-1])+'_pros.npy'
-        #metadata_path = '_'.join(paths[0].split('_')[:-1])+'_feat.json'
         json_data = json.load(open(metadata_path))
-        metadata_embd = self.lang_embeddings[json_data['lang']]
+        metadata_embd = self.lang_embeddings[json_data['lang']].copy()
         age = json_data['age']/80
         gender = [json_data['gender']['Woman']/100, json_data['gender']['Man']/100]
         race = [json_data['race'][r]/100 for r in ("asian", "indian", "black", "white", "middle eastern", "latino hispanic")]
@@ -119,7 +115,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
             val_losses.append(val_loss)
         print("val loss:", val_loss)
 
-    checkpoint_path = f"./MercuryNet/model/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
+    checkpoint_path = f"./MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
     
     torch.save(
         {
@@ -129,7 +125,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
         },
         checkpoint_path,
     )
-    np.save(f"./MercuryNet/model/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}_losses.npy", np.array([train_losses, val_losses]))
+    np.save(f"./MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}_losses.npy", np.array([train_losses, val_losses]))
 
 
     return train_losses, val_losses
@@ -158,7 +154,7 @@ def test(model, test_dataloader):
 
 def segment_data(root_dir, desired_datause):
     all_directories = [dir for dir in os.listdir(root_dir) if dir[0] != '.']
-    actual_datacount = min(all_directories, desired_datause)
+    actual_datacount = min(len(all_directories), desired_datause)
     train_count = int(actual_datacount*0.7)
     val_count = int(actual_datacount*0.15)
     test_count = int(actual_datacount*0.15)
