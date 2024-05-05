@@ -1,4 +1,3 @@
-from text import symbols
 
 
 class hparams:
@@ -24,7 +23,6 @@ class hparams:
     ################################
     # Model Parameters             #
     ################################
-    n_symbols = len(symbols)
     symbols_embedding_dim = 512
 
     # Encoder parameters

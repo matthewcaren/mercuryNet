@@ -335,10 +335,6 @@ class MercuryNet(nn.Module):
         super(MercuryNet, self).__init__()
         self.mask_padding = hps.mask_padding
         self.n_frames_per_step = hps.n_frames_per_step
-        self.embedding = nn.Embedding(hps.n_symbols, hps.symbols_embedding_dim)
-        std = sqrt(2.0 / (hps.n_symbols + hps.symbols_embedding_dim))
-        val = sqrt(3.0) * std  # uniform bounds for std
-        self.embedding.weight.data.uniform_(-val, val)
         self.encoder = Encoder3D(hps).to(device)
         self.decoder = Decoder().to(device)
 

@@ -6,79 +6,29 @@ import os
 import numpy as np
 from torch.utils.data import DataLoader
 import json
+from utils.util import mode
+from AVSpeechDataset import AVSpeechDataset
 
-class AVSpeechDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir, directories, overlap=30, window_size=90):        
-        self.all_paths = []
-        self.all_pros = []
-        self.windows = []
-        self.overlap = overlap
-        self.window_size = window_size
-
-        for vid_dir in directories:
-            images = [os.path.join(root_dir, vid_dir,d) for d
-                      in os.listdir(os.path.join(root_dir, vid_dir)) 
-                      if d.endswith('.jpg')]
-            self.all_paths.append(images)
-
-        for paths in self.all_paths:
-            vid_windows = self.get_windows(len(paths))
-            for window in vid_windows:
-                self.windows.append((paths, window))
-        
-        for vid_dir in directories:
-            frames = np.load(f'{root_dir}/{vid_dir}/{vid_dir}_frames.npy')
-            num_frames = frames.shape[0]
-            vid_windows = self.get_windows(num_frames)
-            for window in vid_windows:
-                self.windows.append((f'{root_dir}/{vid_dir}/{vid_dir}', window))
-
-        self.lang_embeddings = json.load(open('data/lang_embeddings.json'))
-
-    def get_windows(self, num_images):
-        num_windows = (num_images - self.overlap) // (self.window_size - self.overlap)
-        num_frames_in_window = num_windows*(self.window_size - self.overlap) + self.overlap
-        amount_to_chop_front = (num_images - num_frames_in_window) // 2
-        windows = []
-        for i in range(num_windows):
-            start = i*(self.window_size - self.overlap) + amount_to_chop_front
-            windows.append([start, start + self.window_size])
-        return windows
-
-    def __len__(self):
-        return len(self.windows)
-    
-    def __getitem__(self, idx):
-        path, window = self.windows[idx]
-        pros_path = path + '_pros.npy'
-        metadata_path = path + '_feat.json'
-        frames = np.load(path + '_frames.npy')
-        windowed_frames = frames[window[0]:window[1], :, :]
-        
-        json_data = json.load(open(metadata_path))
-        metadata_embd = self.lang_embeddings[json_data['lang']].copy()
-        age = json_data['age']/80
-        gender = [json_data['gender']['Woman']/100, json_data['gender']['Man']/100]
-        race = [json_data['race'][r]/100 for r in ("asian", "indian", "black", "white", "middle eastern", "latino hispanic")]
-        metadata_embd.append(age)
-        metadata_embd.extend(gender)
-        metadata_embd.extend(race)
-        metadata_embd = torch.tensor(metadata_embd)
-
-        target = np.load(pros_path)[:, window[0]:window[1]]
-        target = torch.tensor(target).T.type(torch.FloatTensor)
-        
-        imgs = windowed_frames / 255.
-        imgs = torch.tensor(imgs).permute(3,0,1,2)
-        return imgs, target, metadata_embd
-
-
-def train(model, train_dataloader, val_dataloader, optimizer, epochs):
+def load_model(ckpt_pth):
     device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
+
+    print("using device:", device)
+
+    checkpoint_dict = torch.load(ckpt_pth, map_location=device)["model"]
+    model = MercuryNet()
+    model_dict = model.state_dict()
+    pretrained_dict = {k: v for k, v in checkpoint_dict.items() if k in model_dict}
+    model_dict.update(pretrained_dict)
+
+    model.load_state_dict(model_dict)
+    model = mode(model, True).eval()
+    return model, device
+
+def train(model, device, train_dataloader, val_dataloader, optimizer, epochs):
 
     loss_func = MercuryNetLoss()
 
@@ -124,13 +74,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
     )
 
 
-def test(model, test_dataloader):
-    device = torch.device("cpu")
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
-
+def test(model, device, test_dataloader):
     loss_func = MercuryNetLoss()
 
     test_batches = enumerate(test_dataloader)
@@ -158,8 +102,6 @@ def segment_data(root_dir, desired_datause):
     return train_data, val_data, test_data
 
 def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
-    model = MercuryNet()
-
     encoder = Encoder()
     decoder= Decoder()
     encoder_params = filter(lambda p: p.requires_grad, encoder.parameters())
@@ -169,6 +111,7 @@ def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
     decoder_params = sum([np.prod(p.size()) for p in decoder_params])
     print("total trainable decoder weights:", decoder_params)
 
+    model, device = load_model('model/checkpoints/lip2wav.pt')
 
     train_data, val_data, test_data = segment_data(root_dir, data_count)
     train_dataset = AVSpeechDataset(root_dir, train_data)
@@ -180,8 +123,9 @@ def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
     optim = torch.optim.Adam(model.parameters())
-    train(model, train_dataloader, val_dataloader, optim, epochs=epochs)
-    test(model, test_dataloader)
+    
+    train(model, device, train_dataloader, val_dataloader, optim, epochs=epochs)
+    test(model, device, test_dataloader)
 
 
 
