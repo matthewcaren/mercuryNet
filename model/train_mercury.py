@@ -112,7 +112,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
             val_loss = loss_func(output, target_mps)
         print("val loss:", val_loss)
 
-    checkpoint_path = f"/MercuryNet/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
+    checkpoint_path = f"/model/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
     
     torch.save(
         {

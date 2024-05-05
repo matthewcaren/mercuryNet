@@ -1,8 +1,8 @@
 # Custom
 .DS_Store
 vids*
-MercuryNet/checkpoints/
-MercuryNet/results/
+model/checkpoints/
+model/results/
 yolov8m-face.pt
 
 
