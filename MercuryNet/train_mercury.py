@@ -100,7 +100,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
 
             train_loss.backward()
             optimizer.step()
-        print("Train loss:", train_loss)
+        print("train loss:", train_loss)
         model.eval()
 
         for batch_idx, (data, target, metadata_embd) in val_batches:
