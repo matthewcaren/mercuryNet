@@ -6,7 +6,7 @@ sys.path.append('../')
 from hparams import hparams as hps
 from torch.autograd import Variable
 from torch.nn import functional as F
-from model.layers import ConvNorm, LinearNorm, ConvNorm2D, ConvNorm3D
+from layers import ConvNorm, LinearNorm, ConvNorm2D, ConvNorm3D
 from utils.util import to_var, get_mask_from_lengths
 import numpy as np
 
@@ -359,15 +359,15 @@ class MercuryNet(nn.Module):
         return decoder_output
     
 
-    def inference(self, inputs, mode="train"):
-        if mode == "train":
-            vid_inputs, vid_lengths = inputs
-        else:
-            vid_inputs = inputs
-            vid_inputs = to_var(torch.from_numpy(vid_inputs)).float()
-            vid_inputs = vid_inputs.permute(3, 0, 1, 2).unsqueeze(0).contiguous()
+    # def inference(self, inputs, mode="train"):
+    #     if mode == "train":
+    #         vid_inputs, vid_lengths = inputs
+    #     else:
+    #         vid_inputs = inputs
+    #         vid_inputs = to_var(torch.from_numpy(vid_inputs)).float()
+    #         vid_inputs = vid_inputs.permute(3, 0, 1, 2).unsqueeze(0).contiguous()
 
-        embedded_inputs = vid_inputs.type(torch.FloatTensor)
-        encoder_outputs = self.encoder.inference(embedded_inputs.to(device))
-        decoder_output = self.decoder(encoder_outputs)
-        return decoder_output
+    #     embedded_inputs = vid_inputs.type(torch.FloatTensor)
+    #     encoder_outputs = self.encoder.inference(embedded_inputs.to(device))
+    #     decoder_output = self.decoder(encoder_outputs)
+    #     return decoder_output

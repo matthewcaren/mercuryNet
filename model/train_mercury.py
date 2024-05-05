@@ -1,5 +1,5 @@
 import torch
-from model.model import MercuryNet, MercuryNetLoss
+from model import MercuryNet, MercuryNetLoss, Encoder, Decoder
 from tqdm import tqdm
 from datetime import datetime
 import os
@@ -112,7 +112,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, epochs):
             val_loss = loss_func(output, target_mps)
         print("val loss:", val_loss)
 
-    checkpoint_path = f"/model/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
+    checkpoint_path = f"model/checkpoints/ckpt_{datetime.today().strftime('%d_%H-%M')}.pt"
     
     torch.save(
         {
@@ -159,6 +159,16 @@ def segment_data(root_dir, desired_datause):
 
 def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16):
     model = MercuryNet()
+    
+    encoder = Encoder()
+    decoder= Decoder()
+    encoder_params = filter(lambda p: p.requires_grad, encoder.parameters())
+    encoder_params = sum([np.prod(p.size()) for p in encoder_params])
+    print("total trainable encoder weights:", encoder_params)
+    decoder_params = filter(lambda p: p.requires_grad, decoder.parameters())
+    decoder_params = sum([np.prod(p.size()) for p in decoder_params])
+    print("total trainable encoder weights:", decoder_params)
+
 
     train_data, val_data, test_data = segment_data(root_dir, data_count)
     train_dataset = AVSpeechDataset(root_dir, train_data)

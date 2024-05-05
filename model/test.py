@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 import sys, cv2, os, pickle, argparse, subprocess
 
-from model.model import MercuryNet
+from model import MercuryNet
 from hparams import hparams as hps
 from utils.util import mode, to_var, to_arr
 

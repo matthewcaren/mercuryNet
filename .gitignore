@@ -2,7 +2,6 @@
 .DS_Store
 vids*
 model/checkpoints/
-model/results/
 yolov8m-face.pt
 
 
