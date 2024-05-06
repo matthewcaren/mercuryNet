@@ -63,6 +63,8 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         metadata_embd = torch.tensor(metadata_embd)
 
         target = np.load(pros_path)[:, window[0]:window[1]]
+        if target.shape[1] != 90:
+            target = np.concatenate([target, target[:, -1:]], axis=1)
         target = torch.tensor(target).T.type(torch.FloatTensor)
         
         imgs = windowed_frames / 255.
