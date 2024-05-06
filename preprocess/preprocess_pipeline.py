@@ -20,7 +20,6 @@ assert((22050/VID_FRAME_RATE) % 1 == 0)
 def get_center(region):
     return int(region['x'] + 0.5*region['w']), int(region['y'] + 0.5*region['h'])
 
-
 def extract_features(wav_path):
     '''
     extract f0 and voicedness from centered windows
@@ -50,7 +49,6 @@ def process_rows(model, dataFrame):
     for row in dataFrame:
         # Download video and make directories
         try:
-
             vid_id = f"{row[1]}_{str(row[2])}"
             vid_dir = os.path.join(output_dir, vid_id)
             if not os.path.exists(vid_dir):
@@ -67,20 +65,16 @@ def process_rows(model, dataFrame):
                 if not os.path.exists(wav_path):
                     subprocess.run(['ffmpeg', '-i', vid_path, '-ac', '1',  wav_path,'-loglevel', 'warning'])
                 
-                
                 # Extract frames from video
                 frames = []
                 video_stream = cv2.VideoCapture(vid_path)
                 found_correct_box = False
                 while True:
                     still_reading, frame = video_stream.read()
-                    
-                    
                     if not still_reading:
                         video_stream.release()
                         break
-                    frames.append(frame)
-                    
+                    frames.append(frame) 
                     [x, y, _] = frame.shape
                     head_center = np.array([row[4]*y, row[5]*x])
                     if not found_correct_box:
@@ -104,7 +98,6 @@ def process_rows(model, dataFrame):
                 np.save(f'{vid_dir}/{vid_id}_pros.npy', ground_truth)
 
                 # Run YOLO on all frames
-                
                 batches = [frames[i:i + batch_size] for i in range(0, len(frames), batch_size)]
                 counter, failed_detection = 0, False
                 frames = []
