@@ -147,6 +147,6 @@ if __name__ == '__main__':
     start_time = time.time()
     raw_data = pd.read_csv('data/avspeech_test_langs.csv')
     dataFrame = np.array(raw_data)[start:start+count]
-    model = YOLO('yolov8m-face.pt')
+    model = YOLO('preprocess/yolov8m-face.pt')
     process_rows(model, dataFrame)
     print(f'Processing time for rows {start} to {start + count - 1} is {time.time() - start_time} seconds.\n')

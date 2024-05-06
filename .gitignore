@@ -2,7 +2,7 @@
 .DS_Store
 vids*
 model/checkpoints/
-yolov8m-face.pt
+preprocess/yolov8m-face.pt
 
 
 # Byte-compiled / optimized / DLL files
