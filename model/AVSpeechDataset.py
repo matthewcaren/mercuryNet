@@ -2,34 +2,13 @@ import os
 import torch
 import json
 import numpy as np
-
+import time
 
 class AVSpeechDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir, directories, overlap=30, window_size=90):        
-        self.all_paths = []
-        self.all_pros = []
-        self.windows = []
+    def __init__(self, root_dir, windows, overlap=30, window_size=90):        
+        self.windows = windows
         self.overlap = overlap
         self.window_size = window_size
-
-        for vid_dir in directories:
-            images = [os.path.join(root_dir, vid_dir,d) for d
-                      in os.listdir(os.path.join(root_dir, vid_dir)) 
-                      if d.endswith('.jpg')]
-            self.all_paths.append(images)
-
-        for paths in self.all_paths:
-            vid_windows = self.get_windows(len(paths))
-            for window in vid_windows:
-                self.windows.append((paths, window))
-        
-        for vid_dir in directories:
-            frames = np.load(f'{root_dir}/{vid_dir}/{vid_dir}_frames.npy')
-            num_frames = frames.shape[0]
-            vid_windows = self.get_windows(num_frames)
-            for window in vid_windows:
-                self.windows.append((f'{root_dir}/{vid_dir}/{vid_dir}', window))
-
         self.lang_embeddings = json.load(open('data/lang_embeddings.json'))
 
     def get_windows(self, num_images):
@@ -51,7 +30,6 @@ class AVSpeechDataset(torch.utils.data.Dataset):
         metadata_path = path + '_feat.json'
         frames = np.load(path + '_frames.npy')
         windowed_frames = frames[window[0]:window[1], :, :]
-        
         json_data = json.load(open(metadata_path))
         metadata_embd = self.lang_embeddings[json_data['lang']].copy()
         age = json_data['age']/80

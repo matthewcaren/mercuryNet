@@ -7,5 +7,4 @@ The Roman god Mercury is the god of translators and interpreters.
 
 ## running train/test
 
-Test: `python test.py --data_root=../vids/ --results_root=results/ --checkpoint=./checkpoints/lip2wav.pt `
-Train: `python train.py -d ../vids/ -l ./log/ -cd ./checkpoints/ -cp ./checkpoints/lip2wav.pt`
+Train: `python model/train_mercury.py -r [ROOT_DIR] -c [DATA_COUNT] -b [BATCH_SIZE] -e [EPOCHS] -cp [CHECKPOINT PATH]`

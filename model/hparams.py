@@ -69,9 +69,9 @@ class hparams:
     weight_decay = 1e-6
     grad_clip_thresh = 1.0
     mask_padding = True
-    f0_penalty = 10
-    voiced_penalty = 10
-    amp_penalty = 100
+    f0_penalty = 5
+    voiced_penalty = 50
+    amp_penalty = 1
 
     ############# added
     iscrop = True
