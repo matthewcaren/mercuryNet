@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 import json
 from utils.util import mode
 from AVSpeechDataset import AVSpeechDataset
-from MercuryNetLoss import MercuryNetLoss
+from model.loss import MercuryNetLoss
 import random
 from hparams import hparams as hps
 import argparse
