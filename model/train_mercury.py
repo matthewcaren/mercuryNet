@@ -137,7 +137,7 @@ if __name__ == '__main__':
     epochs = int(args.epochs)
     torch.autograd.set_detect_anomaly(True)
     start_time = time.time()
-    run_training_pass(args.root_dir, data_count=count, batch_size=batch_size, epochs=epochs, ckpt=args.checkpoint)
+    run_training_pass(args.root_dir, data_count=count, batch_size=batch_size, epochs=epochs, ckpt_pth=args.checkpoint)
     print(f'Total training time for {epochs} epochs and {count} windows is {time.time() - start_time} seconds')
 
    
