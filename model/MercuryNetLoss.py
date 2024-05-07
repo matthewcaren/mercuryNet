@@ -50,7 +50,7 @@ class MercuryNetLoss(nn.Module):
             print(torch.sum(torch.isnan(target_amp)))
             print(torch.sum(torch.isnan(output_amp)))
             print(torch.sum(torch.isnan(target_voiced)))
-            print(torch.sum(torch.isnan(model_output[:, :, 1])))
+            print(torch.sum(torch.isnan(output_voiced)))
      
         return loss
     
