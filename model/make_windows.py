@@ -1,6 +1,9 @@
 import numpy as np
 import os
-def make_all_windows(root_dir, directories, overlap=30, window_size=90):        
+from tqdm import tqdm
+
+def make_all_windows(root_dir, overlap=30, window_size=90):      
+    directories = [d for d in os.listdir(root_dir) if d[0] != '.']
     windows = []
     overlap = overlap
     window_size = window_size
@@ -11,7 +14,7 @@ def make_all_windows(root_dir, directories, overlap=30, window_size=90):
             vid_windows = get_windows(overlap, num_frames, window_size)
             for window in vid_windows:
                 windows.append((f'{root_dir}/{vid_dir}/{vid_dir}', window))
-    np.save('data/all_windows.npy', windows)
+    return windows
                 
 def get_windows(overlap, num_images, window_size):
     num_windows = (num_images - overlap) // (window_size - overlap)
@@ -23,4 +26,4 @@ def get_windows(overlap, num_images, window_size):
         windows.append([start, start + window_size])
     return windows
 
-make_all_windows('/nobackup/users/jrajagop/vids', os.listdir('/nobackup/users/jrajagop/vids'))
+# make_all_windows('/nobackup/users/jrajagop/vids', os.listdir('/nobackup/users/jrajagop/vids'))

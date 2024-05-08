@@ -4,7 +4,7 @@ vids*
 model/checkpoints/
 preprocess/yolov8m-face.pt
 logs/
-
+model/results/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
