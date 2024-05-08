@@ -1,5 +1,5 @@
 import torch
-from model import MercuryNet, Encoder3D, Decoder, load_model
+from model import Encoder3D, Decoder, load_model
 from tqdm import tqdm
 from datetime import datetime
 import os
@@ -19,28 +19,19 @@ def train(model, device, train_dataloader, val_dataloader, optimizer, epochs):
     human_readable_loss = HumanReadableLoss()
     human_readable_loss_list = []
     for epoch in range(epochs):
-        
         train_batches = tqdm(enumerate(train_dataloader), total=len(train_dataloader), desc=f'Training for epoch {epoch}')
         start = time.time()
-#         for _ in train_batches:
-#             pass
-#         print("Just load", time.time() - start)
         model.train()
         torch.cuda.empty_cache()
         for batch_idx, (data, target, metadata_embd) in train_batches:
-#             print("D", time.time() - start)
-#             start = time.time()
             data_mps = data.to(device)
             target_mps = target.to(device)
             metadata_embd_mps = metadata_embd.to(device)
-#             print("A", time.time() - start)
             optimizer.zero_grad()
             output = model(data_mps, metadata_embd_mps)
             train_loss = loss_func(output, target_mps)
             train_loss.backward()
-#             print("B", time.time() - start)
             optimizer.step()
-#             print("C", time.time() - start)
         print("train loss:", train_loss)
         model.eval()
         torch.cuda.empty_cache()
@@ -86,7 +77,7 @@ def test(model, device, test_dataloader):
     print("test loss:", test_loss)
 
 def segment_data(root_dir, desired_datause):
-    all_windows = np.load('data/all_windows.npy', allow_pickle=True)
+    all_windows = np.load('data/filtered_en.npy', allow_pickle=True)
     actual_datacount = min(len(all_windows), desired_datause)
     train_count = int(actual_datacount*0.7)
     val_count = int(actual_datacount*0.15)
@@ -118,7 +109,7 @@ def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16, ckpt_pt
     val_dataloader = DataLoader(val_dataset, num_workers = 2,  batch_size=batch_size, shuffle=True)
     test_dataloader = DataLoader(test_dataset, num_workers = 2,  batch_size=batch_size, shuffle=True)
 
-    optim = torch.optim.Adam(model.parameters())
+    optim = torch.optim.Adam(model.parameters(), lr=0.0007)
     train(model, device, train_dataloader, val_dataloader, optim, epochs=epochs)
     test(model, device, test_dataloader)
 
