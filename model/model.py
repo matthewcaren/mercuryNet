@@ -21,11 +21,12 @@ def load_model(ckpt_pth):
 
     checkpoint_dict = torch.load(ckpt_pth, map_location=device)["model"]
     model = MercuryNet(device)
-    model_dict = model.state_dict()
-    pretrained_dict = {k: v for k, v in checkpoint_dict.items() if k in model_dict}
-    model_dict.update(pretrained_dict)
-
-    model.load_state_dict(model_dict)
+    
+#     model_dict = model.state_dict()
+#     pretrained_dict = {k: v for k, v in checkpoint_dict.items() if k in model_dict}
+#     model_dict.update(pretrained_dict)
+#     model.load_state_dict(model_dict)
+    
     model = mode(model, True).eval()
     return model, device
 
@@ -210,7 +211,6 @@ class Decoder(nn.Module):
 #         )
 
         self.fc1 = torch.nn.Sequential(
-            torch.nn.BatchNorm1d(90),
             torch.nn.Linear(447, 512),
             torch.nn.ReLU(),
             torch.nn.Linear(512, 1024),
@@ -220,38 +220,42 @@ class Decoder(nn.Module):
 
         self.conv1 = torch.nn.Sequential(
             # depth-wise conv to expand channel space
+            torch.nn.BatchNorm1d(1024),
             ConvNorm(in_channels=1024, out_channels=1024, kernel_size=5),
             torch.nn.ReLU(),
             ConvNorm(in_channels=1024, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([512, 90])
+#             torch.nn.LayerNorm([512, 90])
         )
         
         self.conv2 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(512),
             # depth-wise conv to expand channel space
             ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([512, 90])
+#             torch.nn.LayerNorm([512, 90])
         )
-           
+        
         self.conv3 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(512), 
             # depth-wise conv to expand channel space
             ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([512, 90])
+#             torch.nn.LayerNorm([512, 90])
         )
             
         self.conv4 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(512),
             # depth-wise conv to expand channel space
             ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=512, out_channels=512, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([512, 90])
+#             torch.nn.LayerNorm([512, 90])
         )
             
         self.fc2 = torch.nn.Sequential(
@@ -260,91 +264,102 @@ class Decoder(nn.Module):
         )
 
         self.conv5 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(256),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([256, 90])
+#             torch.nn.LayerNorm([256, 90])
         )
         
         self.conv6 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(256),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([256, 90])
+#             torch.nn.LayerNorm([256, 90])
         )
         
         self.conv7 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(256),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([256, 90])
+#             torch.nn.LayerNorm([256, 90])
         )
         
                 
         self.conv8 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(256),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([256, 90])
+#             torch.nn.LayerNorm([256, 90])
         )
         
         
         self.conv9 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(256),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([256, 90])
+#             torch.nn.LayerNorm([256, 90])
         )
         
         self.conv10 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(256),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([256, 90])
+#             torch.nn.LayerNorm([256, 90])
         )
         
         self.conv11 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(256),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([256, 90])
+#             torch.nn.LayerNorm([256, 90])
         )
         self.conv12 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(256),
             ConvNorm(in_channels=256, out_channels=256, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=256, out_channels=128, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([128, 90])
+#             torch.nn.LayerNorm([128, 90])
         )
         
         self.conv13 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(128),
             ConvNorm(in_channels=128, out_channels=128, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=128, out_channels=128, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([128, 90])
+#             torch.nn.LayerNorm([128, 90])
         )
             
         self.conv14 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(128),
             ConvNorm(in_channels=128, out_channels=128, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=128, out_channels=128, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([128, 90])
+#             torch.nn.LayerNorm([128, 90])
         )
         self.conv15 = torch.nn.Sequential(
+            torch.nn.BatchNorm1d(128),
             ConvNorm(in_channels=128, out_channels=128, kernel_size=3),
             torch.nn.ReLU(),
             ConvNorm(in_channels=128, out_channels=128, kernel_size=3),
             torch.nn.ReLU(),
-            torch.nn.LayerNorm([128, 90])
+#             torch.nn.LayerNorm([128, 90])
         )
         
 
@@ -369,17 +384,16 @@ class Decoder(nn.Module):
         x = x + self.conv3(x)
         x = x + self.conv4(x)
         x = x.transpose(-2, -1) # flip feat, time dims      (time, 512)
-
         x = self.fc2(x)         # linear                    (time, 256)
         x = x.transpose(-2, -1) # flip feat, time dims      (256, time)
-
+        x_old = x.clone()
         x = x + self.conv5(x)       # 2nd conv block            (256, time)
         x = x + self.conv6(x)
         x = x + self.conv7(x)
         x = x + self.conv8(x)
         x = x + self.conv9(x)
         x = x + self.conv10(x)
-        x = x + self.conv11(x)
+        x = x + self.conv11(x) + x_old
         x = self.conv12(x)
         x = x + self.conv13(x)
         x = x + self.conv14(x)

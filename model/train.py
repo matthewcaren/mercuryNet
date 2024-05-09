@@ -12,7 +12,44 @@ import random
 from hparams import hparams as hps
 import argparse
 import time
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
+def plot_grad_flow(named_parameters, epoch, batch_ix):
+    '''Plots the gradients flowing through different layers in the net during training.
+    Can be used for checking for possible gradient vanishing / exploding problems.
+    
+    Usage: Plug this function in Trainer class after loss.backwards() as 
+    "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
+    ave_grads = []
+    max_grads= []
+    layers = []
+    for n, p in named_parameters:
+        if(p.requires_grad) and ("bias" not in n):
+            layers.append(n)
+            ave_grads.append(p.grad.abs().mean())
+            max_grads.append(p.grad.abs().max())
+    ave_grads = ave_grads
+    layers = layers
+    layers = [l.split('.')[1] for l in layers]
+    max_grads = max_grads
+    plt.figure(figsize=(24, 6))
+    plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.5, lw=1, color="c")
+    plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.5, lw=1, color="b")
+    plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
+    plt.xticks(range(0,len(ave_grads), 1), layers, rotation="vertical")
+    plt.xlim(left=0, right=len(ave_grads))
+    plt.yscale('log')
+    plt.ylim(bottom = -0.001, top=0.5) # zoom in on the lower gradient regions
+    plt.xlabel("Layers")
+    plt.ylabel("average gradient")
+    plt.title("Gradient flow")
+    plt.grid(True)
+    plt.legend([Line2D([0], [0], color="c", lw=4),
+                Line2D([0], [0], color="b", lw=4),
+                Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
+    plt.savefig(f'model/results/grad_viz_{epoch}_{batch_ix}.jpg')
+    
 def train(model, device, train_dataloader, val_dataloader, optimizer, epochs):
     start = time.time()
     loss_func = MercuryNetLoss()
@@ -31,8 +68,11 @@ def train(model, device, train_dataloader, val_dataloader, optimizer, epochs):
             output = model(data_mps, metadata_embd_mps)
             train_loss = loss_func(output, target_mps)
             train_loss.backward()
+            if batch_idx % 50 == 0:
+                plot_grad_flow(model.named_parameters(), epoch, batch_idx)
             optimizer.step()
         print("train loss:", train_loss)
+        
         model.eval()
         torch.cuda.empty_cache()
         val_batches = tqdm(enumerate(val_dataloader), total=len(val_dataloader), desc=f'Validation for epoch {epoch}')
@@ -109,7 +149,7 @@ def run_training_pass(root_dir, data_count=100, epochs=8, batch_size=16, ckpt_pt
     val_dataloader = DataLoader(val_dataset, num_workers = 2,  batch_size=batch_size, shuffle=True)
     test_dataloader = DataLoader(test_dataset, num_workers = 2,  batch_size=batch_size, shuffle=True)
 
-    optim = torch.optim.Adam(model.parameters(), lr=0.0007)
+    optim = torch.optim.Adam(model.parameters(), lr=0.0002)
     train(model, device, train_dataloader, val_dataloader, optim, epochs=epochs)
     test(model, device, test_dataloader)
 
