@@ -115,7 +115,7 @@ def test(model, device, test_dataloader):
     print("test loss:", test_loss)
 
 def segment_data(root_dir, desired_datause):
-    all_windows = np.load('data/filtered_en.npy', allow_pickle=True)
+    all_windows = np.load('data/english_windows.npy', allow_pickle=True)
     actual_datacount = min(len(all_windows), desired_datause)
     train_count = int(actual_datacount*0.7)
     val_count = int(actual_datacount*0.15)
