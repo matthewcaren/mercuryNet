@@ -12,8 +12,7 @@ from datetime import datetime
 
 
 def test_model(root_dir, ckpt_pth):
-#     windows = make_all_windows(root_dir)
-    windows = np.load('data/filtered_en.npy', allow_pickle=True)[100:200]
+    windows = np.load('data/english_windows.npy', allow_pickle=True)[100:200]
     test_dataset = AVSpeechDataset(root_dir, windows)
     test_dataloader = DataLoader(test_dataset, num_workers = 2, batch_size=4, shuffle=True)
     test_batches = tqdm(enumerate(test_dataloader),  total=len(test_dataloader), desc='Testing model')
