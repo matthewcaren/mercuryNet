@@ -43,9 +43,9 @@ class MercuryNetLoss(nn.Module):
         
         loss = 0
         loss += hps.f0_penalty * F.mse_loss(output_f0, target_f0)
-        loss += hps.voiced_penalty * F.mse_loss(output_voiced, target_voiced)
+#         loss += hps.voiced_penalty * F.mse_loss(output_voiced, target_voiced)
         loss += hps.amp_penalty * F.mse_loss(target_amp, output_amp)
-        print(loss.detach().cpu(), F.mse_loss(output_f0, target_f0).detach().cpu(), F.mse_loss(target_voiced,      output_voiced).detach().cpu(), F.mse_loss(target_amp, output_amp).detach().cpu())
+       # print(loss.detach().cpu(), F.mse_loss(output_f0, target_f0).detach().cpu(), F.mse_loss(target_amp, output_amp).detach().cpu())
 
         if torch.sum(torch.isnan(loss)) != 0:
             print(model_output)
