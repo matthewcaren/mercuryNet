@@ -1,14 +1,11 @@
 import torch
 from torch import nn
-from math import sqrt
 import sys
 sys.path.append('../')
 from hparams import hparams as hps
-from torch.autograd import Variable
 from torch.nn import functional as F
-from layers import ConvNorm, LinearNorm, ConvNorm2D, ConvNorm3D
-from utils.util import to_var, get_mask_from_lengths, mode
-import numpy as np
+from layers import ConvNorm, ConvNorm3D
+from utils.util import mode
 
 def load_model(ckpt_pth):
     device = torch.device("cpu")

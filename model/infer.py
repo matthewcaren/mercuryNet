@@ -1,7 +1,5 @@
-import torch
 import numpy as np
 from tqdm import tqdm
-import os
 import argparse
 from model import load_model
 from AVSpeechDataset import AVSpeechDataset

@@ -7,7 +7,7 @@ def make_all_windows(root_dir, overlap=30, window_size=90):
     windows = []
     overlap = overlap
     window_size = window_size
-    for vid_dir in directories:
+    for vid_dir in tqdm(directories):
         if vid_dir[0] != '.':
             frames = np.load(f'{root_dir}/{vid_dir}/{vid_dir}_frames.npy')
             num_frames = frames.shape[0]
@@ -25,5 +25,3 @@ def get_windows(overlap, num_images, window_size):
         start = i*(window_size - overlap) + amount_to_chop_front
         windows.append([start, start + window_size])
     return windows
-
-# make_all_windows('/nobackup/users/jrajagop/vids', os.listdir('/nobackup/users/jrajagop/vids'))
