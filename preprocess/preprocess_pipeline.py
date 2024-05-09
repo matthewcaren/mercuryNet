@@ -139,6 +139,7 @@ if __name__ == '__main__':
     count = int(args.count)
     start_time = time.time()
     raw_data = pd.read_csv('data/avspeech_test_langs.csv')
+    raw_data = raw_data[raw_data['Language'] == 'en']
     dataFrame = np.array(raw_data)[start:start+count]
     model = YOLO('preprocess/yolov8m-face.pt')
     process_rows(model, dataFrame)
