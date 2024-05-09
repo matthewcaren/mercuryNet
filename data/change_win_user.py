@@ -12,4 +12,4 @@ for p, [s, e] in original:
     new_path = [original_path.replace(prev_user, new_user), [s, e]]
     new_list.append(new_path)
 
-np.save(PATH, np.array(new_list), allow_pickle=True)
+np.save(PATH, new_list, allow_pickle=True)
