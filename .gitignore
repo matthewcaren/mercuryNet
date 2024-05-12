@@ -5,8 +5,6 @@ model/checkpoints/
 preprocess/yolov8m-face.pt
 logs/
 model/results/
-data/english_windows.npy
-
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

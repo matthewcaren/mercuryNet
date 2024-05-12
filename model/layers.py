@@ -109,7 +109,7 @@ class ConvNorm3D(torch.nn.Module):
 
         self.residual = residual
         self.conv3d = torch.nn.Conv3d(
-            in_channels,
+in_channels,
             out_channels,
             kernel_size=kernel_size,
             stride=stride,

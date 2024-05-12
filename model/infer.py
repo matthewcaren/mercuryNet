@@ -7,40 +7,35 @@ from torch.utils.data import DataLoader
 from loss import MercuryNetLoss, HumanReadableLoss
 from make_windows import make_all_windows
 from datetime import datetime
+import random
 
-
-def test_model(root_dir, ckpt_pth):
-    windows = np.load('data/english_windows.npy', allow_pickle=True)[100:200]
-    test_dataset = AVSpeechDataset(root_dir, windows)
-    test_dataloader = DataLoader(test_dataset, num_workers = 2, batch_size=4, shuffle=True)
-    test_batches = tqdm(enumerate(test_dataloader),  total=len(test_dataloader), desc='Testing model')
+def test_model(root_dir, windows, ckpt_pth):
     model, device = load_model(ckpt_pth)
     model.eval()
+    test_dataset = AVSpeechDataset(root_dir, windows)
+    test_dataloader = DataLoader(test_dataset, num_workers = 16, batch_size=1, shuffle=True)
+    test_batches = tqdm(enumerate(test_dataloader),  total=len(test_dataloader), desc='Testing model')
     loss_func = MercuryNetLoss()
-    human_readable_loss = HumanReadableLoss()
-    human_readable_loss_list = []
-    arr_1 = np.zeros((1, 90))
-    arr_2 = np.zeros((1, 90))
+    pred_list, target_list = [], []
     for batch_idx, (data, target, metadata_embd) in test_batches:
-        data_mps = data.to(device)
-        target_mps = target.to(device)
-        metadata_embd_mps = metadata_embd.to(device)
-        output = model(data_mps, metadata_embd_mps)
-        pred = output[:, :, 0].detach().cpu().numpy()
-        test_loss = loss_func(output, target_mps)
-        
-        targ = target[: ,:, 0].detach().cpu().numpy()
-        arr_1 = np.vstack([arr_1, pred])
-        arr_2 = np.vstack([arr_2, targ])
-        human_readable_loss_list.append(list(human_readable_loss(output, target_mps)))
-    np.save(f"model/results/loss_{datetime.today().strftime('%d_%H-%M')}.npy", np.array(human_readable_loss_list))
-    np.save('nb/model_out.npy', arr_1)
-    np.save('nb/targ.npy', arr_2)
+        data, target, metadata_embd = data.to(device), target.to(device), metadata_embd.to(device)
+        output = model(data, metadata_embd)
+        pred_list.append(output.detach().cpu().numpy())
+        target_list.append(target.detach().cpu().numpy())
+        test_loss = loss_func(output, target)
+    np.save(f"nb/model_output_{datetime.today().strftime('%d_%H-%M')}.npy", np.array([pred_list, target_list]))
     print("Final loss:", test_loss)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--root_dir", help="Video Directory", required=True)
+    parser.add_argument('-w', '--window_loc', help = 'Window directory', required=True)
+    parser.add_argument('-c', '--count', help = 'How many windows to include in dataset', default=100)
     parser.add_argument("-cp", "--checkpoint", help="Path to trained checkpoint", required=True)
+    
     args = parser.parse_args()
-    test_model(args.root_dir, args.checkpoint)
+    windows = np.load(args.window_loc)
+    windows = [(path, int(start), int(end)) for path, start, end in list(windows)]
+#     selected_windows = random.sample(windows, int(args.count))
+    selected_windows = windows[0:1]*int(args.count)
+    test_model(args.root_dir, selected_windows, args.checkpoint)
